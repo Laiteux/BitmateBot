@@ -20,25 +20,24 @@ namespace BitconfirmBot
 {
     public static class Program
     {
+        public static string BotUsername { get; private set; }
+
         private static readonly List<Command> _commands = typeof(Command).Assembly.GetTypes()
             .Where(t => t.IsSubclassOf(typeof(Command)) && t.IsClass && !t.IsAbstract)
             .Select(t => (Command)Activator.CreateInstance(t))
             .ToList();
 
-        private static string _botUsername;
-
         [SuppressMessage("ReSharper", "MethodHasAsyncOverload")]
-        [SuppressMessage("ReSharper", "MethodSupportsCancellation")]
         public static async Task Main()
         {
             var settings = JsonSerializer.Deserialize<Settings>(File.ReadAllText(Path.Combine("Files", "Settings.json")));
 
             var bot = new TelegramBotClient(settings.Token);
-            _botUsername = (await bot.GetMeAsync()).Username;
+            BotUsername = (await bot.GetMeAsync()).Username;
 
             var receiverOptions = new ReceiverOptions()
             {
-                AllowedUpdates = new[] { UpdateType.Message }
+                AllowedUpdates = new[] { UpdateType.Message, UpdateType.ChatMember }
             };
 
             await bot.ReceiveAsync(HandleUpdate, HandleError, receiverOptions);
@@ -49,16 +48,17 @@ namespace BitconfirmBot
         {
             try
             {
-                if (update.Message is { Type: MessageType.Text } message)
-                {
-                    Command command;
-                    string[] commandArgs;
+                Message message = update.Message;
+                Command command = null;
+                string[] commandArgs = null;
 
+                if (update.Message is { Type: MessageType.Text })
+                {
                     if (message.Text.StartsWith('/'))
                     {
                         string commandName = message.Text.TrimStart('/').Split(' ').First();
 
-                        if (commandName.Contains('@') && !commandName.EndsWith("@" + _botUsername, StringComparison.OrdinalIgnoreCase))
+                        if (commandName.Contains('@') && !commandName.EndsWith("@" + BotUsername, StringComparison.OrdinalIgnoreCase))
                             return;
 
                         commandName = commandName.Split('@').First().ToLower();
@@ -92,39 +92,45 @@ namespace BitconfirmBot
                         command = _commands.Single(c => c is BitconfirmCommand);
                         commandArgs = new[] { BitconfirmCommand.AutoNetwork, txid, confirmations.ToString() };
                     }
+                }
+                else if (update.Message?.NewChatMembers?.Any(u => u.Username == BotUsername) ?? false)
+                {
+                    command = _commands.Single(c => c is StartCommand);
+                }
 
-                    if (command != null)
+                if (command != null)
+                {
+                    _ = Task.Run(async () =>
                     {
-                        _ = Task.Run(async () =>
+                        try
+                        {
+                            await command.HandleAsync(bot, message, commandArgs);
+                        }
+                        catch (Exception ex)
                         {
                             try
                             {
-                                await command.HandleAsync(bot, message, commandArgs);
+                                await bot.SendTextMessageAsync(message.Chat, ex.Message);
                             }
-                            catch (Exception ex)
+                            catch
                             {
-                                try
-                                {
-                                    await bot.SendTextMessageAsync(message.Chat, ex.Message);
-                                }
-                                catch
-                                {
-                                    Console.WriteLine(ex);
-                                }
+                                Console.WriteLine(ex + Environment.NewLine);
                             }
-                        });
-                    }
+                        }
+                    });
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex);
+                Console.WriteLine(ex + Environment.NewLine);
             }
         }
 
-        private static async Task HandleError(ITelegramBotClient bot, Exception ex, CancellationToken cancellationToken)
+        private static Task HandleError(ITelegramBotClient bot, Exception ex, CancellationToken cancellationToken)
         {
-            Console.WriteLine(ex);
+            Console.WriteLine(ex + Environment.NewLine);
+
+            return Task.CompletedTask;
         }
     }
 }

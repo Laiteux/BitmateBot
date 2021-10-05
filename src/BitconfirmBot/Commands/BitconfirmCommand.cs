@@ -58,7 +58,7 @@ namespace BitconfirmBot.Commands
                 if (network == AutoNetwork)
                 {
                     await bot.SendTextMessageAsync(message.Chat, new StringBuilder()
-                        .AppendLine("😓 I was unable to auto-detect what network this transaction is on.")
+                        .AppendLine("😓 I was unable to auto-detect what network this transaction belongs to.")
                         .AppendLine()
                         .AppendLine($"👉 Please use the /{Name} command and specify it yourself.")
                         .ToString());
@@ -101,7 +101,7 @@ namespace BitconfirmBot.Commands
                     return;
                 }
 
-                await bot.SendTextMessageAsync(message.Chat, $"🔔 Ok, I will notify you when your transaction hits {confirmations} {"confirmation".Pluralize(confirmations)}.");
+                await bot.SendTextMessageAsync(message.Chat, $"🔔 Ok, I will let you know you when your transaction hits {confirmations} {"confirmation".Pluralize(confirmations)}.");
             }
             else
             {
