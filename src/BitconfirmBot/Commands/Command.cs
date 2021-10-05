@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Telegram.Bot;
@@ -31,7 +30,7 @@ namespace BitconfirmBot.Commands
             await ExecuteAsync(bot, message, args);
         }
 
-        private async Task SendUsageAsync(ITelegramBotClient bot, ChatId chatId)
+        protected async Task SendUsageAsync(ITelegramBotClient bot, ChatId chatId)
         {
             await bot.SendTextMessageAsync(chatId, $"Usage: `/{Name} {string.Join(' ', Args.Select(arg => (arg.Value ? "<" : "[") + arg.Key + (arg.Value ? ">" : "]")))}`", ParseMode.Markdown);
         }

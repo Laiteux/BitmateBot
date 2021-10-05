@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using BitconfirmBot.Commands;
@@ -36,54 +38,82 @@ namespace BitconfirmBot
 
             var receiverOptions = new ReceiverOptions()
             {
-                AllowedUpdates = new[] { UpdateType.Message, UpdateType.CallbackQuery }
+                AllowedUpdates = new[] { UpdateType.Message }
             };
 
-            await bot.ReceiveAsync(HandleUpdateAsync, HandleError, receiverOptions);
+            await bot.ReceiveAsync(HandleUpdate, HandleError, receiverOptions);
         }
 
         [SuppressMessage("ReSharper", "MethodSupportsCancellation")]
-        private static async Task HandleUpdateAsync(ITelegramBotClient bot, Update update, CancellationToken cancellationToken)
+        private static async Task HandleUpdate(ITelegramBotClient bot, Update update, CancellationToken cancellationToken)
         {
             try
             {
                 if (update.Message is { Type: MessageType.Text } message)
                 {
-                    if (!message.Text.StartsWith('/'))
-                        return;
+                    Command command;
+                    string[] commandArgs;
 
-                    string commandName = message.Text.TrimStart('/').Split(' ').First();
-
-                    if (commandName.Contains('@') && !commandName.EndsWith("@" + _botUsername, StringComparison.OrdinalIgnoreCase))
-                        return;
-
-                    commandName = commandName.Split('@').First().ToLower();
-
-                    string[] commandArgs = message.Text.Split(' ', StringSplitOptions.RemoveEmptyEntries).Skip(1).ToArray();
-
-                    var command = _commands.SingleOrDefault(c => c.Name == commandName);
-
-                    if (command == null)
-                        return;
-
-                    _ = Task.Run(async () =>
+                    if (message.Text.StartsWith('/'))
                     {
-                        try
+                        string commandName = message.Text.TrimStart('/').Split(' ').First();
+
+                        if (commandName.Contains('@') && !commandName.EndsWith("@" + _botUsername, StringComparison.OrdinalIgnoreCase))
+                            return;
+
+                        commandName = commandName.Split('@').First().ToLower();
+
+                        command = _commands.SingleOrDefault(c => c.Name == commandName);
+                        commandArgs = message.Text.Split(' ', StringSplitOptions.RemoveEmptyEntries).Skip(1).ToArray();
+                    }
+                    else
+                    {
+                        string[] splittedMessage = message.Text.Split(' ');
+                        string txid = splittedMessage[0];
+
+                        if (Regex.IsMatch(txid, "^0x[a-fA-F0-9]{64}$"))
                         {
-                            await command.HandleAsync(bot, message, commandArgs);
+                            await bot.SendTextMessageAsync(message.Chat, new StringBuilder()
+                                .AppendLine("😔 Sorry, Ethereum tokens aren't supported as of right now.")
+                                .AppendLine()
+                                .AppendLine("Here's the list of currently supported networks:")
+                                .AppendLine()
+                                .AppendJoin("\n", BitconfirmCommand.SupportedNetworks.Select(n => $"- {n} / {n}TEST"))
+                                .ToString());
+
+                            return;
                         }
-                        catch (Exception ex)
+
+                        if (!Regex.IsMatch(txid, "^[a-fA-F0-9]{64}$"))
+                            return;
+
+                        int confirmations = splittedMessage.Length < 2 ? 1 : int.Parse(splittedMessage[1]);
+
+                        command = _commands.Single(c => c is BitconfirmCommand);
+                        commandArgs = new[] { BitconfirmCommand.AutoNetwork, txid, confirmations.ToString() };
+                    }
+
+                    if (command != null)
+                    {
+                        _ = Task.Run(async () =>
                         {
                             try
                             {
-                                await bot.SendTextMessageAsync(message.Chat, ex.Message);
+                                await command.HandleAsync(bot, message, commandArgs);
                             }
-                            catch
+                            catch (Exception ex)
                             {
-                                Console.WriteLine(ex);
+                                try
+                                {
+                                    await bot.SendTextMessageAsync(message.Chat, ex.Message);
+                                }
+                                catch
+                                {
+                                    Console.WriteLine(ex);
+                                }
                             }
-                        }
-                    });
+                        });
+                    }
                 }
             }
             catch (Exception ex)
@@ -92,6 +122,9 @@ namespace BitconfirmBot
             }
         }
 
-        private static Task HandleError(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken) => Task.CompletedTask;
+        private static async Task HandleError(ITelegramBotClient bot, Exception ex, CancellationToken cancellationToken)
+        {
+            Console.WriteLine(ex);
+        }
     }
 }

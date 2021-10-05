@@ -1,6 +1,6 @@
 ﻿namespace BitconfirmBot.Services.SoChain.Responses
 {
-    public class IsTxConfirmedResponse
+    public class TxConfirmationInfoResponse
     {
         public long Confirmations { get; set; }
 

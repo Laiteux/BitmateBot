@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using BitconfirmBot.Extensions;
 using BitconfirmBot.Services.SoChain;
+using BitconfirmBot.Services.SoChain.Responses;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 
@@ -23,12 +24,14 @@ namespace BitconfirmBot.Commands
             { "confirmations", false }
         };
 
-        private static readonly SoChainService _soChain = new();
-
         /// <summary>
         /// <see href="https://chain.so/api/#networks-supported"/>
         /// </summary>
-        private static readonly string[] _supportedNetworks = { "BTC", "DOGE", "LTC", "DASH", "ZEC" };
+        public static readonly string[] SupportedNetworks = { "BTC", "LTC", "DOGE", "DASH", "ZEC" };
+
+        public const string AutoNetwork = "-AUTO-";
+
+        private static readonly SoChainService _soChain = new();
 
         protected override async Task ExecuteAsync(ITelegramBotClient bot, Message message, string[] args)
         {
@@ -36,12 +39,41 @@ namespace BitconfirmBot.Commands
             string txid = args[1];
             int confirmations = args.Length < 3 ? 1 : int.Parse(args[2]);
 
-            if (!_supportedNetworks.Contains(network.TrimEnd("TEST")))
+            ResponseBase<TxConfirmationInfoResponse> txConfirmationInfo = null;
+
+            if (network == AutoNetwork)
+            {
+                foreach (string supportedNetwork in SupportedNetworks)
+                {
+                    txConfirmationInfo = await _soChain.GetTxConfirmationInfoAsync(supportedNetwork, txid);
+
+                    if (txConfirmationInfo.IsSuccessful())
+                    {
+                        network = supportedNetwork;
+
+                        break;
+                    }
+                }
+
+                if (network == AutoNetwork)
+                {
+                    await bot.SendTextMessageAsync(message.Chat, new StringBuilder()
+                        .AppendLine("😓 I was unable to auto-detect what network this transaction is on.")
+                        .AppendLine()
+                        .AppendLine($"👉 Please use the /{Name} command and specify it yourself.")
+                        .ToString());
+
+                    await SendUsageAsync(bot, message.Chat);
+
+                    return;
+                }
+            }
+            else if (!SupportedNetworks.Contains(network.TrimEnd("TEST")))
             {
                 await bot.SendTextMessageAsync(message.Chat, new StringBuilder()
-                    .AppendLine("List of supported networks:")
+                    .AppendLine("💡 List of supported networks:")
                     .AppendLine()
-                    .AppendJoin("\n", _supportedNetworks.Select(n => $"- {n} / {n}TEST"))
+                    .AppendJoin("\n", SupportedNetworks.Select(n => $"- {n} / {n}TEST"))
                     .ToString());
 
                 return;
@@ -56,14 +88,15 @@ namespace BitconfirmBot.Commands
                 return;
             }
 
-            var isTxConfirmed = await _soChain.IsTxConfirmedAsync(network, txid);
-            bool confirmed = isTxConfirmed.Data.Confirmations > 0;
+            txConfirmationInfo ??= await _soChain.GetTxConfirmationInfoAsync(network, txid);
 
-            if (isTxConfirmed.IsSuccessful())
+            bool confirmed = txConfirmationInfo.Data.Confirmations > 0;
+
+            if (txConfirmationInfo.IsSuccessful())
             {
-                if (isTxConfirmed.Data.Confirmations >= confirmations)
+                if (txConfirmationInfo.Data.Confirmations >= confirmations)
                 {
-                    await bot.SendTextMessageAsync(message.Chat, $"⚠️ Your transaction has already reached {confirmations} {"confirmation".Pluralize(confirmations)}.");
+                    await bot.SendTextMessageAsync(message.Chat, $"⚠️ Your transaction has already hit {txConfirmationInfo.Data.Confirmations} {"confirmation".Pluralize(txConfirmationInfo.Data.Confirmations)}.");
 
                     return;
                 }
@@ -86,18 +119,18 @@ namespace BitconfirmBot.Commands
             {
                 try
                 {
-                    isTxConfirmed = await _soChain.IsTxConfirmedAsync(network, txid);
+                    txConfirmationInfo = await _soChain.GetTxConfirmationInfoAsync(network, txid);
 
-                    if (isTxConfirmed.Data.Confirmations >= confirmations)
+                    if (txConfirmationInfo.Data.Confirmations >= confirmations)
                     {
                         await bot.SendTextMessageAsync(message.Chat,
-                            $"✅ Your transaction just hit {isTxConfirmed.Data.Confirmations} {"confirmation".Pluralize(isTxConfirmed.Data.Confirmations)}!",
+                            $"✅ Your transaction just hit {txConfirmationInfo.Data.Confirmations} {"confirmation".Pluralize(txConfirmationInfo.Data.Confirmations)}!",
                             replyToMessageId: message.MessageId);
 
                         break;
                     }
 
-                    if (confirmations == 1)
+                    if (!confirmed)
                     {
                         networkInfo = await _soChain.GetNetworkInfoAsync(network);
 
@@ -117,18 +150,18 @@ namespace BitconfirmBot.Commands
                                 newBlock = true;
                             }
                         }
-                    }
 
-                    if (isTxConfirmed.Data.Confirmations > 0 && !confirmed)
-                    {
-                        await bot.SendTextMessageAsync(message.Chat, new StringBuilder()
-                                .AppendLine($"⛏ New block #{networkInfo.Data.Blocks} was mined and your transaction just made it through.")
-                                .AppendLine()
-                                .AppendLine($"⏳ {confirmations - 1} more until it hits {confirmations} confirmations!")
-                                .ToString(),
-                            replyToMessageId: message.MessageId);
+                        if (txConfirmationInfo.Data.Confirmations > 0)
+                        {
+                            await bot.SendTextMessageAsync(message.Chat, new StringBuilder()
+                                    .AppendLine($"⛏ New block #{networkInfo.Data.Blocks} was mined and your transaction just made it through.")
+                                    .AppendLine()
+                                    .AppendLine($"⏳ {confirmations - 1} more until it hits {confirmations} confirmations...")
+                                    .ToString(),
+                                replyToMessageId: message.MessageId);
 
-                        confirmed = true;
+                            confirmed = true;
+                        }
                     }
                 }
                 catch

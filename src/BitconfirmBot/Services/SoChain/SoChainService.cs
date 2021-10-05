@@ -40,11 +40,11 @@ namespace BitconfirmBot.Services.SoChain
             return JsonSerializer.Deserialize<ResponseBase<T>>(responseString, _jsonSerializerOptions);
         }
 
-        public async Task<ResponseBase<IsTxConfirmedResponse>> IsTxConfirmedAsync(string network, string txid)
+        public async Task<ResponseBase<TxConfirmationInfoResponse>> GetTxConfirmationInfoAsync(string network, string txid)
         {
             HttpRequestMessage RequestMessage() => new(HttpMethod.Get, $"is_tx_confirmed/{network}/{txid}");
 
-            return await GetResponseAsync<IsTxConfirmedResponse>(RequestMessage);
+            return await GetResponseAsync<TxConfirmationInfoResponse>(RequestMessage);
         }
 
         public async Task<ResponseBase<NetworkInfoResponse>> GetNetworkInfoAsync(string network)
