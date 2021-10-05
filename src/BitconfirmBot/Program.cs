@@ -78,7 +78,7 @@ namespace BitconfirmBot
                                 .AppendLine()
                                 .AppendLine("Here's the list of currently supported networks:")
                                 .AppendLine()
-                                .AppendJoin("\n", BitconfirmCommand.SupportedNetworks.Select(n => $"- {n} / {n}TEST"))
+                                .AppendJoin(" / ", BitconfirmCommand.SupportedNetworks)
                                 .ToString());
 
                             return;
@@ -90,7 +90,7 @@ namespace BitconfirmBot
                         int confirmations = splittedMessage.Length < 2 ? 1 : int.Parse(splittedMessage[1]);
 
                         command = _commands.Single(c => c is BitconfirmCommand);
-                        commandArgs = new[] { BitconfirmCommand.AutoNetwork, txid, confirmations.ToString() };
+                        commandArgs = new[] { txid, confirmations.ToString() };
                     }
                 }
                 else if (update.Message?.NewChatMembers?.Any(u => u.Username == BotUsername) ?? false)

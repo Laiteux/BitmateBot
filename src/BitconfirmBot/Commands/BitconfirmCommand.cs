@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using BitconfirmBot.Extensions;
@@ -19,17 +18,15 @@ namespace BitconfirmBot.Commands
 
         protected override Dictionary<string, bool> Args { get; } = new()
         {
-            { "NETWORK", true },
-            { "TXID", true },
+            { "txid", true },
             { "confirmations", false }
         };
 
         /// <summary>
-        /// <see href="https://chain.so/api/#networks-supported"/>
+        /// <see href="https://chain.so/api/#networks-supported"/><br/>
+        /// By descending priority order (so auto-detection is faster in most cases)
         /// </summary>
         public static readonly string[] SupportedNetworks = { "BTC", "LTC", "DOGE", "DASH", "ZEC" };
-
-        public const string AutoNetwork = "-AUTO-";
 
         private static readonly SoChainService _soChain = new();
 
@@ -37,45 +34,34 @@ namespace BitconfirmBot.Commands
 
         protected override async Task ExecuteAsync(ITelegramBotClient bot, Message message, string[] args)
         {
-            string network = args[0].ToUpper();
-            string txid = args[1];
-            int confirmations = args.Length < 3 ? 1 : int.Parse(args[2]);
+            string network = null;
+            string txid = args[0];
+            int confirmations = args.Length < 2 ? 1 : int.Parse(args[1]);
 
             ResponseBase<TxConfirmationInfoResponse> txConfirmationInfo = null;
 
-            if (network == AutoNetwork)
+            foreach (string supportedNetwork in SupportedNetworks)
             {
-                foreach (string supportedNetwork in SupportedNetworks)
+                txConfirmationInfo = await _soChain.GetTxConfirmationInfoAsync(supportedNetwork, txid);
+
+                if (txConfirmationInfo.IsSuccessful())
                 {
-                    txConfirmationInfo = await _soChain.GetTxConfirmationInfoAsync(supportedNetwork, txid);
+                    network = supportedNetwork;
 
-                    if (txConfirmationInfo.IsSuccessful())
-                    {
-                        network = supportedNetwork;
+                    await bot.SendTextMessageAsync(message.Chat, $"🌐 Found transaction on the {network} network.");
 
-                        break;
-                    }
-                }
-
-                if (network == AutoNetwork)
-                {
-                    await bot.SendTextMessageAsync(message.Chat, new StringBuilder()
-                        .AppendLine("😓 I was unable to auto-detect what network this transaction belongs to.")
-                        .AppendLine()
-                        .AppendLine($"👉 Please use the /{Name} command and specify it yourself.")
-                        .ToString());
-
-                    await SendUsageAsync(bot, message.Chat);
-
-                    return;
+                    break;
                 }
             }
-            else if (!SupportedNetworks.Contains(network.TrimEnd("TEST")))
+
+            if (network == null)
             {
                 await bot.SendTextMessageAsync(message.Chat, new StringBuilder()
-                    .AppendLine("💡 List of supported networks:")
+                    .AppendLine("😓 Sorry, I was unable to detect what network this transaction belongs to.")
                     .AppendLine()
-                    .AppendJoin("\n", SupportedNetworks.Select(n => $"- {n} / {n}TEST"))
+                    .AppendLine("Here's the list of currently supported networks:")
+                    .AppendLine()
+                    .AppendJoin(" / ", SupportedNetworks)
                     .ToString());
 
                 return;
@@ -89,8 +75,6 @@ namespace BitconfirmBot.Commands
 
                 return;
             }
-
-            txConfirmationInfo ??= await _soChain.GetTxConfirmationInfoAsync(network, txid);
 
             bool confirmed = txConfirmationInfo.Data.Confirmations > 0;
 
