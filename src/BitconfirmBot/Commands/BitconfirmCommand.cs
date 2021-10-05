@@ -127,7 +127,7 @@ namespace BitconfirmBot.Commands
                             if (newBlock)
                             {
                                 await bot.SendTextMessageAsync(message.Chat,
-                                    $"⛏ New block #{lastBlock} was mined but your transaction didn't make it through.",
+                                    $"⛏ New block #{lastBlock} was mined but your transaction didn't make it through, too low fees.",
                                     replyToMessageId: message.MessageId);
 
                                 lastBlock = networkInfo.Data.Blocks;
