@@ -21,7 +21,7 @@ namespace BitconfirmBot.Commands
                 .AppendLine()
                 .AppendLine("You can use the /bitconfirm command so I can start tracking your transaction and notify you when it confirms.")
                 .AppendLine()
-                .AppendLine("Or just send me your raw transaction hash and I will attempt to auto-detect which network it belongs to.")
+                .AppendLine("Or just send me your raw transaction hash or link and I will attempt to auto-detect which network it belongs to.")
                 .AppendLine()
                 .AppendLine("Tip: You can also append a number at the end of your message to specify after how many confirmations you want to be notified.");
 

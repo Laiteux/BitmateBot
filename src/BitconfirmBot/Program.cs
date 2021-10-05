@@ -69,9 +69,14 @@ namespace BitconfirmBot
                     else
                     {
                         string[] splittedMessage = message.Text.Split(' ');
-                        string txid = splittedMessage[0];
+                        string transaction = splittedMessage[0];
 
-                        if (Regex.IsMatch(txid, "^0x[a-fA-F0-9]{64}$"))
+                        var match = Regex.Match(transaction, @"^(.*[\/#=])?((0x)?[a-fA-F0-9]{64})(\/.*)?$");
+
+                        if (!match.Success)
+                            return;
+
+                        if (match.Groups[3].Success)
                         {
                             await bot.SendTextMessageAsync(message.Chat, new StringBuilder()
                                 .AppendLine("😔 Sorry, Ethereum tokens aren't supported as of right now.")
@@ -84,9 +89,7 @@ namespace BitconfirmBot
                             return;
                         }
 
-                        if (!Regex.IsMatch(txid, "^[a-fA-F0-9]{64}$"))
-                            return;
-
+                        string txid = match.Groups[2].Value;
                         int confirmations = splittedMessage.Length < 2 ? 1 : int.Parse(splittedMessage[1]);
 
                         command = _commands.Single(c => c is BitconfirmCommand);
