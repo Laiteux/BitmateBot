@@ -33,6 +33,8 @@ namespace BitconfirmBot.Commands
 
         private static readonly SoChainService _soChain = new();
 
+        private static int _currentlyMonitoredTransactions;
+
         protected override async Task ExecuteAsync(ITelegramBotClient bot, Message message, string[] args)
         {
             string network = args[0].ToUpper();
@@ -115,6 +117,8 @@ namespace BitconfirmBot.Commands
             long lastBlock = networkInfo.Data.Blocks;
             bool newBlock = false;
 
+            _currentlyMonitoredTransactions++;
+
             while (true)
             {
                 try
@@ -166,13 +170,20 @@ namespace BitconfirmBot.Commands
                 }
                 catch
                 {
-                    // ignored
+                    // Ignore
                 }
                 finally
                 {
-                    await Task.Delay(TimeSpan.FromSeconds(1));
+                    // https://chain.so/api/#rate-limits
+                    const double maxRequestsPerMinute = (double)(300 - 30) / 2; // -30 (-10%) for safety, /2 because we send up to 2 requests for each transaction
+
+                    double delaySeconds = 60 / (maxRequestsPerMinute / _currentlyMonitoredTransactions);
+
+                    await Task.Delay(TimeSpan.FromSeconds(Math.Max(1, delaySeconds)));
                 }
             }
+
+            _currentlyMonitoredTransactions--;
         }
     }
 }
