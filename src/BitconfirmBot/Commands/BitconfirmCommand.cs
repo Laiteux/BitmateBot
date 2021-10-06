@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using BitconfirmBot.Extensions;
+using BitconfirmBot.Models;
 using BitconfirmBot.Services.SoChain;
 using BitconfirmBot.Services.SoChain.Responses;
 using Telegram.Bot;
@@ -76,8 +77,6 @@ namespace BitconfirmBot.Commands
                 return;
             }
 
-            bool confirmed = txConfirmationInfo.Data.Confirmations > 0;
-
             if (txConfirmationInfo.IsSuccessful())
             {
                 if (txConfirmationInfo.Data.Confirmations >= confirmations)
@@ -87,7 +86,7 @@ namespace BitconfirmBot.Commands
                     return;
                 }
 
-                await bot.SendTextMessageAsync(message.Chat, $"🔔 Ok, I will let you know you when your transaction hits {confirmations} {"confirmation".Pluralize(confirmations)}.");
+                await bot.SendTextMessageAsync(message.Chat, $"🔔 Ok, I will let you know when your transaction hits {confirmations} {"confirmation".Pluralize(confirmations)}.");
             }
             else
             {
@@ -96,8 +95,24 @@ namespace BitconfirmBot.Commands
                 return;
             }
 
-            var networkInfo = await _soChain.GetNetworkInfoAsync(network);
+            var transaction = new Transaction(network, txid, confirmations, message);
 
+            Program.Cache.Add(transaction);
+
+            await StartMonitoringTransactionAsync(bot, transaction, txConfirmationInfo);
+        }
+
+        public static async Task StartMonitoringTransactionAsync(ITelegramBotClient bot, Transaction transaction, ResponseBase<TxConfirmationInfoResponse> txConfirmationInfo = null)
+        {
+            string network = transaction.Network;
+            string txid = transaction.TxId;
+            int confirmations = transaction.Confirmations;
+            var message = transaction.Message;
+
+            txConfirmationInfo ??= await _soChain.GetTxConfirmationInfoAsync(network, txid);
+            bool confirmed = txConfirmationInfo.Data.Confirmations > 0;
+
+            var networkInfo = await _soChain.GetNetworkInfoAsync(network);
             long lastBlock = networkInfo.Data.Blocks;
             bool newBlock = false;
 
@@ -168,6 +183,8 @@ namespace BitconfirmBot.Commands
             }
 
             _currentlyMonitoredTransactions--;
+
+            Program.Cache.Remove(transaction);
         }
     }
 }

@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using BitconfirmBot.Commands;
 using BitconfirmBot.Models;
+using BitconfirmBot.Services.Cache;
 using Telegram.Bot;
 using Telegram.Bot.Extensions.Polling;
 using Telegram.Bot.Types;
@@ -20,6 +21,10 @@ namespace BitconfirmBot
 {
     public static class Program
     {
+        public static Settings Settings { get; private set; }
+
+        public static CacheService Cache { get; private set; }
+
         public static string BotUsername { get; private set; }
 
         private static readonly List<Command> _commands = typeof(Command).Assembly.GetTypes()
@@ -30,9 +35,14 @@ namespace BitconfirmBot
         [SuppressMessage("ReSharper", "MethodHasAsyncOverload")]
         public static async Task Main()
         {
-            var settings = JsonSerializer.Deserialize<Settings>(File.ReadAllText(Path.Combine("Files", "Settings.json")));
+            Settings = JsonSerializer.Deserialize<Settings>(File.ReadAllText(Path.Combine("Files", "Settings.json")));
 
-            var bot = new TelegramBotClient(settings.Token);
+            Cache = new CacheService(Path.Combine("Files", "Cache.json"), new JsonSerializerOptions()
+            {
+                WriteIndented = true
+            });
+
+            var bot = new TelegramBotClient(Settings.Token);
             BotUsername = (await bot.GetMeAsync()).Username;
 
             var receiverOptions = new ReceiverOptions()
@@ -40,7 +50,25 @@ namespace BitconfirmBot
                 AllowedUpdates = new[] { UpdateType.Message, UpdateType.ChatMember }
             };
 
-            await bot.ReceiveAsync(HandleUpdate, HandleError, receiverOptions);
+            bot.StartReceiving(HandleUpdate, HandleError, receiverOptions);
+
+            Console.WriteLine($"@{BotUsername} started!");
+
+            foreach (var transaction in Cache.Read())
+            {
+                try
+                {
+                    await BitconfirmCommand.StartMonitoringTransactionAsync(bot, transaction);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Failed to start monitoring cached transaction ({transaction.Network} {transaction.TxId}): {ex.Message}");
+                }
+            }
+
+            Console.WriteLine("Cache loaded!");
+
+            await Task.Delay(-1);
         }
 
         [SuppressMessage("ReSharper", "MethodSupportsCancellation")]
