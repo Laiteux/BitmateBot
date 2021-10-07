@@ -74,6 +74,16 @@ namespace BitconfirmBot.Commands
                 return;
             }
 
+            var cachedTransaction = new CachedTransaction(Program.Data.Settings.Api, blockchain, txid, confirmations, message);
+
+            if (Cache.TryFind(cachedTransaction, out var found))
+            {
+                await bot.SendTextMessageAsync(message.Chat, "⬆️ You are already monitoring this transaction.",
+                    replyToMessageId: found.Message.MessageId);
+
+                return;
+            }
+
             const int maxConfirmations = 100;
 
             if (confirmations is < 1 or > maxConfirmations)
@@ -100,8 +110,6 @@ namespace BitconfirmBot.Commands
 
                 return;
             }
-
-            var cachedTransaction = new CachedTransaction(Program.Data.Settings.Api, blockchain, txid, confirmations, message);
 
             Cache.Add(cachedTransaction);
 
@@ -230,7 +238,6 @@ namespace BitconfirmBot.Commands
             }
 
             _currentlyMonitoredTransactions--;
-
             Cache.Remove(cachedTransaction);
         }
     }

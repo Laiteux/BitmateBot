@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using BitconfirmBot.Models;
 
@@ -59,6 +60,18 @@ namespace BitconfirmBot.Services.Cache
                 cache.RemoveAll(t => t.Message.MessageId == transaction.Message.MessageId);
 
                 Write(cache);
+            }
+        }
+
+        public bool TryFind(CachedTransaction transaction, out CachedTransaction found)
+        {
+            lock (_locker)
+            {
+                var cache = Read();
+
+                found = cache.SingleOrDefault(t => Equals(t, transaction));
+
+                return found != null;
             }
         }
     }
