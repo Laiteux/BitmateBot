@@ -8,7 +8,7 @@ using BitconfirmBot.Models;
 using BitconfirmBot.Services.Crypto.BlockCypher.Exceptions;
 using BitconfirmBot.Services.Crypto.BlockCypher.Responses;
 using BitconfirmBot.Services.Crypto.Models;
-using BitconfirmBot.Utilities;
+using BitconfirmBot.Utilities.Json;
 
 namespace BitconfirmBot.Services.Crypto.BlockCypher
 {

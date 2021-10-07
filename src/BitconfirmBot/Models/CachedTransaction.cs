@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Security.Cryptography;
+using System.Text;
+using BitconfirmBot.Utilities;
 using Telegram.Bot.Types;
 
 namespace BitconfirmBot.Models
@@ -22,7 +25,13 @@ namespace BitconfirmBot.Models
 
         public long Confirmations { get; }
 
+        public long LastBlockMined { get; set; }
+
+        public bool BlockAlertsMuted { get; set; }
+
         public Message Message { get; }
+
+        public Message LastBlockMinedMessage { get; set; }
 
         public override bool Equals(object obj)
         {
@@ -38,9 +47,21 @@ namespace BitconfirmBot.Models
                 Message.From.Id == transaction.Message.From.Id;
         }
 
+        private static readonly MD5 _md5 = MD5.Create();
+
+        /// <summary>
+        /// <see href="https://stackoverflow.com/a/26870764/7854126"/>
+        /// </summary>
         public override int GetHashCode()
         {
-            return HashCode.Combine(Api, Blockchain, TxId, Confirmations, Message);
+            var plain = string.Concat(Api, Blockchain, TxId, Confirmations, Message.MessageId);
+
+            byte[] hash = _md5.ComputeHash(Encoding.UTF8.GetBytes(plain));
+
+            return BitConverter.ToInt32(hash);
+
+            // Can't use this because we need a deterministic value that remains the same between different program runs
+            // return HashCode.Combine(Api, Blockchain, TxId, Confirmations, Message.MessageId);
         }
     }
 }

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using BitconfirmBot.Models;
 using BitconfirmBot.Services.Crypto.Models;
 using BitconfirmBot.Services.Crypto.SoChain.Responses;
-using BitconfirmBot.Utilities;
+using BitconfirmBot.Utilities.Json;
 
 namespace BitconfirmBot.Services.Crypto.SoChain
 {

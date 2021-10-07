@@ -1,8 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
 using BitconfirmBot.Models;
+using BitconfirmBot.Utilities.Json;
 
 namespace BitconfirmBot.Services.Cache
 {
@@ -15,7 +17,19 @@ namespace BitconfirmBot.Services.Cache
         public CacheService(string cacheFilePath, JsonSerializerOptions jsonSerializerOptions = null)
         {
             _cacheFilePath = cacheFilePath;
-            _jsonSerializerOptions = jsonSerializerOptions;
+
+            _jsonSerializerOptions = jsonSerializerOptions ?? new();
+            _jsonSerializerOptions?.Converters.Add(new InlineKeyboardMarkupJsonConverter());
+        }
+
+        private void Write(List<CachedTransaction> cache)
+        {
+            lock (_locker)
+            {
+                string cacheJson = JsonSerializer.Serialize(cache, _jsonSerializerOptions);
+
+                File.WriteAllText(_cacheFilePath, cacheJson);
+            }
         }
 
         public List<CachedTransaction> Read()
@@ -25,16 +39,6 @@ namespace BitconfirmBot.Services.Cache
                 string cacheJson = File.ReadAllText(_cacheFilePath);
 
                 return JsonSerializer.Deserialize<List<CachedTransaction>>(cacheJson, _jsonSerializerOptions);
-            }
-        }
-
-        public void Write(List<CachedTransaction> cache)
-        {
-            lock (_locker)
-            {
-                string cacheJson = JsonSerializer.Serialize(cache, _jsonSerializerOptions);
-
-                File.WriteAllText(_cacheFilePath, cacheJson);
             }
         }
 
@@ -56,20 +60,43 @@ namespace BitconfirmBot.Services.Cache
             {
                 var cache = Read();
 
-                // Can't use cache.Remove(transaction) since ReadCache() creates a different object and reference isn't equal
-                cache.RemoveAll(t => t.Message.MessageId == transaction.Message.MessageId);
+                cache.Remove(transaction);
 
                 Write(cache);
             }
         }
-
-        public bool TryFind(CachedTransaction transaction, out CachedTransaction found)
+        public void Update(CachedTransaction transaction)
         {
             lock (_locker)
             {
                 var cache = Read();
 
-                found = cache.SingleOrDefault(t => Equals(t, transaction));
+                int index = cache.IndexOf(transaction);
+                cache[index] = transaction;
+
+                Write(cache);
+            }
+        }
+
+        public bool TryGet(CachedTransaction transaction, out CachedTransaction found)
+        {
+            lock (_locker)
+            {
+                var cache = Read();
+
+                found = cache.SingleOrDefault(t => t.Equals(transaction));
+
+                return found != null;
+            }
+        }
+
+        public bool TryGetByHashCode(int hashCode, out CachedTransaction found)
+        {
+            lock (_locker)
+            {
+                var cache = Read();
+
+                found = cache.SingleOrDefault(t => t.GetHashCode() == hashCode);
 
                 return found != null;
             }

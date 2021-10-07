@@ -11,6 +11,7 @@ using BitconfirmBot.Services.Crypto.Models;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
+using Telegram.Bot.Types.ReplyMarkups;
 
 namespace BitconfirmBot.Commands
 {
@@ -74,9 +75,9 @@ namespace BitconfirmBot.Commands
                 return;
             }
 
-            var cachedTransaction = new CachedTransaction(Program.Data.Settings.Api, blockchain, txid, confirmations, message);
+            var cachedTransaction = new CachedTransaction(Program.Data.Settings.Api.ToLower(), blockchain, txid, confirmations, message);
 
-            if (Cache.TryFind(cachedTransaction, out var found))
+            if (Cache.TryGet(cachedTransaction, out var found))
             {
                 await bot.SendTextMessageAsync(message.Chat, "⬆️ You are already monitoring this transaction.",
                     replyToMessageId: found.Message.MessageId);
@@ -122,11 +123,10 @@ namespace BitconfirmBot.Commands
             string txid = cachedTransaction.TxId;
             long confirmations = cachedTransaction.Confirmations;
             var message = cachedTransaction.Message;
+            Message lastBlockMinedMessage = null;
 
             transaction ??= await Api.GetTransactionAsync(network, txid);
             bool oneConfirmation = transaction.Confirmations > 0;
-
-            long savedHeight = 0;
             bool newBlock = false;
 
             _currentlyMonitoredTransactions++;
@@ -135,6 +135,10 @@ namespace BitconfirmBot.Commands
             {
                 try
                 {
+                    // Refresh cachedTransaction in case the model got updated
+                    Cache.TryGet(cachedTransaction, out cachedTransaction);
+                    lastBlockMinedMessage = cachedTransaction.LastBlockMinedMessage;
+
                     transaction = await Api.GetTransactionAsync(network, txid);
 
                     if (transaction.Confirmations >= confirmations)
@@ -176,23 +180,36 @@ namespace BitconfirmBot.Commands
                         {
                             long height = await Api.GetBlockchainHeightAsync(network);
 
-                            if (savedHeight == 0)
+                            if (cachedTransaction.LastBlockMined == 0)
                             {
-                                savedHeight = height;
+                                cachedTransaction.LastBlockMined = height;
+                                Cache.Update(cachedTransaction);
                             }
                             else
                             {
-                                if (height > savedHeight)
+                                if (height > cachedTransaction.LastBlockMined)
                                 {
                                     if (newBlock)
                                     {
-                                        await bot.SendTextMessageAsync(message.Chat,
-                                            $"⛏ New block #{height} was mined but your transaction didn't make it through, most likely because of the fees being too low.",
-                                            ParseMode.Markdown,
-                                            replyToMessageId: message.MessageId);
+                                        if (!cachedTransaction.BlockAlertsMuted)
+                                        {
+                                            if (lastBlockMinedMessage != null)
+                                            {
+                                                await bot.EditMessageReplyMarkupAsync(lastBlockMinedMessage.Chat, lastBlockMinedMessage.MessageId, null);
+                                            }
 
-                                        savedHeight = height;
+                                            cachedTransaction.LastBlockMinedMessage = await bot.SendTextMessageAsync(message.Chat,
+                                                $"⛏ New block `#{height}` was mined but your transaction didn't make it through, most likely because of the fees being too low.",
+                                                ParseMode.Markdown,
+                                                replyToMessageId: message.MessageId,
+                                                replyMarkup: new InlineKeyboardMarkup(InlineKeyboardButton.WithCallbackData(
+                                                    "🔕 Mute block alerts", $"toggleBlockAlerts:{cachedTransaction.GetHashCode()}")));
+                                        }
+
+                                        cachedTransaction.LastBlockMined = height;
                                         newBlock = false;
+
+                                        Cache.Update(cachedTransaction);
                                     }
                                     else
                                     {
@@ -203,10 +220,11 @@ namespace BitconfirmBot.Commands
                                 if (transaction.Confirmations > 0)
                                 {
                                     await bot.SendTextMessageAsync(message.Chat, new StringBuilder()
-                                            .AppendLine($"⛏ New block #{height} was mined and your transaction just made it through.")
+                                            .AppendLine($"⛏ New block `#{height}` was mined and your transaction just made it through.")
                                             .AppendLine()
                                             .AppendLine($"⏳ {confirmations - 1} more until it hits {confirmations} confirmations...")
                                             .ToString(),
+                                        ParseMode.Markdown,
                                         replyToMessageId: message.MessageId);
 
                                     oneConfirmation = true;
@@ -235,6 +253,11 @@ namespace BitconfirmBot.Commands
                         await Task.Delay(TimeSpan.FromSeconds(Math.Max(1, delaySeconds)));
                     }
                 }
+            }
+
+            if (lastBlockMinedMessage != null)
+            {
+                await bot.EditMessageReplyMarkupAsync(lastBlockMinedMessage.Chat, lastBlockMinedMessage.MessageId, null);
             }
 
             _currentlyMonitoredTransactions--;

@@ -19,6 +19,7 @@ using Telegram.Bot;
 using Telegram.Bot.Extensions.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
+using Telegram.Bot.Types.ReplyMarkups;
 using File = System.IO.File;
 
 namespace BitconfirmBot
@@ -42,7 +43,7 @@ namespace BitconfirmBot
 
             Data.Bot.StartReceiving(HandleUpdate, HandleError, new ReceiverOptions()
             {
-                AllowedUpdates = new[] { UpdateType.Message, UpdateType.ChatMember }
+                AllowedUpdates = new[] { UpdateType.Message, UpdateType.CallbackQuery, UpdateType.ChatMember }
             });
 
             Console.WriteLine($"[+] @{Data.BotUsername} started!");
@@ -99,6 +100,11 @@ namespace BitconfirmBot
                         "⚠️ Bot just restarted and API was changed, please resend your transaction.",
                         replyToMessageId: transaction.Message.MessageId);
 
+                    if (transaction.LastBlockMinedMessage != null)
+                    {
+                        await Data.Bot.EditMessageReplyMarkupAsync(transaction.LastBlockMinedMessage.Chat, transaction.LastBlockMinedMessage.MessageId, null);
+                    }
+
                     Data.Cache.Remove(transaction);
                 }
             }
@@ -115,7 +121,7 @@ namespace BitconfirmBot
                 Command command = null;
                 string[] commandArgs = null;
 
-                if (update.Message is { Type: MessageType.Text })
+                if (message is { Type: MessageType.Text })
                 {
                     if (message.Text.StartsWith('/'))
                     {
@@ -159,7 +165,36 @@ namespace BitconfirmBot
                         commandArgs = new[] { txid, confirmations.ToString() };
                     }
                 }
-                else if (update.Message?.NewChatMembers?.Any(u => u.Username == Data.BotUsername) ?? false)
+                else if (update.CallbackQuery is { } callbackQuery)
+                {
+                    string[] parts = callbackQuery.Data.Split(':');
+                    string action = parts[0];
+
+                    if (action == "toggleBlockAlerts")
+                    {
+                        int hashCode = int.Parse(parts[1]);
+
+                        if (!Data.Cache.TryGetByHashCode(hashCode, out var transaction) || transaction.Message.From.Id != callbackQuery.From.Id)
+                        {
+                            await Data.Bot.AnswerCallbackQueryAsync(callbackQuery.Id);
+                        }
+
+                        transaction.BlockAlertsMuted = !transaction.BlockAlertsMuted;
+
+                        Data.Cache.Update(transaction);
+
+                        await Data.Bot.AnswerCallbackQueryAsync(callbackQuery.Id, transaction.BlockAlertsMuted
+                            ? "🔕 Block alerts muted"
+                            : "🔔 Block alerts unmuted");
+
+                        await Data.Bot.EditMessageReplyMarkupAsync(transaction.LastBlockMinedMessage.Chat, transaction.LastBlockMinedMessage.MessageId,
+                            new InlineKeyboardMarkup(InlineKeyboardButton.WithCallbackData(transaction.BlockAlertsMuted
+                                ? "🔔 Unmute block alerts"
+                                : "🔕 Mute block alerts",
+                                $"toggleBlockAlerts:{transaction.GetHashCode()}")));
+                    }
+                }
+                else if (message?.NewChatMembers?.Any(u => u.Username == Data.BotUsername) ?? false)
                 {
                     command = _commands.Single(c => c is StartCommand);
                 }
