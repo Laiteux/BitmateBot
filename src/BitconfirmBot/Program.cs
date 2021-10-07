@@ -3,14 +3,18 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using BitconfirmBot.Commands;
+using BitconfirmBot.Extensions;
+using BitconfirmBot.Helpers;
 using BitconfirmBot.Models;
 using BitconfirmBot.Services.Cache;
+using BitconfirmBot.Services.Crypto;
 using Telegram.Bot;
 using Telegram.Bot.Extensions.Polling;
 using Telegram.Bot.Types;
@@ -21,54 +25,85 @@ namespace BitconfirmBot
 {
     public static class Program
     {
-        public static Settings Settings { get; private set; }
+        public static Data Data { get; } = new();
 
-        public static CacheService Cache { get; private set; }
+        private static readonly List<Type> _cryptoApiTypes = TypeHelper.GetSubclasses<CryptoApi>().ToList();
 
-        public static string BotUsername { get; private set; }
-
-        private static readonly List<Command> _commands = typeof(Command).Assembly.GetTypes()
-            .Where(t => t.IsSubclassOf(typeof(Command)) && t.IsClass && !t.IsAbstract)
+        private static readonly List<Command> _commands = TypeHelper.GetSubclasses<Command>()
             .Select(t => (Command)Activator.CreateInstance(t))
             .ToList();
 
-        [SuppressMessage("ReSharper", "MethodHasAsyncOverload")]
         public static async Task Main()
         {
-            Settings = JsonSerializer.Deserialize<Settings>(File.ReadAllText(Path.Combine("Files", "Settings.json")));
+            Init();
 
-            Cache = new CacheService(Path.Combine("Files", "Cache.json"), new JsonSerializerOptions()
+            Data.Bot = new TelegramBotClient(Data.Settings.Token);
+            Data.BotUsername = (await Data.Bot.GetMeAsync()).Username;
+
+            Data.Bot.StartReceiving(HandleUpdate, HandleError, new ReceiverOptions()
+            {
+                AllowedUpdates = new[] { UpdateType.Message, UpdateType.ChatMember }
+            });
+
+            Console.WriteLine($"[+] @{Data.BotUsername} started!");
+
+            await LoadCache();
+
+            await Task.Delay(-1);
+        }
+
+        private static void Init()
+        {
+            Data.Settings = JsonSerializer.Deserialize<Settings>(File.ReadAllText(Path.Combine("Files", "Settings.json")));
+
+            Data.Cache = new CacheService(Path.Combine("Files", "Cache.json"), new JsonSerializerOptions()
             {
                 WriteIndented = true
             });
 
-            var bot = new TelegramBotClient(Settings.Token);
-            BotUsername = (await bot.GetMeAsync()).Username;
+            Data.Proxies = File.ReadAllLines(Path.Combine("Files", "Proxies.txt"))
+                .Select(p => new Proxy(p, Data.Settings.Proxies))
+                .ToList();
 
-            var receiverOptions = new ReceiverOptions()
+            var cryptoApi = _cryptoApiTypes.SingleOrDefault(c => c.Name.TrimEnd("Service").Equals(Data.Settings.Api, StringComparison.OrdinalIgnoreCase));
+
+            if (cryptoApi == null)
             {
-                AllowedUpdates = new[] { UpdateType.Message, UpdateType.ChatMember }
-            };
+                throw new Exception("No API found with this name.");
+            }
 
-            bot.StartReceiving(HandleUpdate, HandleError, receiverOptions);
+            Data.Api = (CryptoApi)Activator.CreateInstance(cryptoApi, Data.Settings.Proxies.Use ? Data.Proxies : new HttpClient());
+        }
 
-            Console.WriteLine($"@{BotUsername} started!");
-
-            foreach (var transaction in Cache.Read())
+        private static async Task LoadCache()
+        {
+            foreach (var transaction in Data.Cache.Read())
             {
-                try
+                if (transaction.Api == Data.Settings.Api)
                 {
-                    await BitconfirmCommand.StartMonitoringTransactionAsync(bot, transaction);
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await BitconfirmCommand.StartMonitoringTransactionAsync(Data.Bot, transaction);
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"Failed monitoring cached transaction ({transaction.Blockchain} {transaction.TxId}): {ex.Message}");
+                        }
+                    });
                 }
-                catch (Exception ex)
+                else
                 {
-                    Console.WriteLine($"Failed to start monitoring cached transaction ({transaction.Network} {transaction.TxId}): {ex.Message}");
+                    await Data.Bot.SendTextMessageAsync(transaction.Message.Chat,
+                        "⚠️ Bot just restarted and API was changed, please resend your transaction.",
+                        replyToMessageId: transaction.Message.MessageId);
+
+                    Data.Cache.Remove(transaction);
                 }
             }
 
-            Console.WriteLine("Cache loaded!");
-
-            await Task.Delay(-1);
+            Console.WriteLine("[+] Cache loaded!");
         }
 
         [SuppressMessage("ReSharper", "MethodSupportsCancellation")]
@@ -86,7 +121,7 @@ namespace BitconfirmBot
                     {
                         string commandName = message.Text.TrimStart('/').Split(' ').First();
 
-                        if (commandName.Contains('@') && !commandName.EndsWith("@" + BotUsername, StringComparison.OrdinalIgnoreCase))
+                        if (commandName.Contains('@') && !commandName.EndsWith("@" + Data.BotUsername, StringComparison.OrdinalIgnoreCase))
                             return;
 
                         commandName = commandName.Split('@').First().ToLower();
@@ -104,14 +139,14 @@ namespace BitconfirmBot
                         if (!match.Success)
                             return;
 
-                        if (match.Groups[3].Success)
+                        if (match.Groups[3].Success && Data.Api.EthereumBlockchains == null)
                         {
                             await bot.SendTextMessageAsync(message.Chat, new StringBuilder()
                                 .AppendLine("😔 Sorry, Ethereum tokens aren't supported as of right now.")
                                 .AppendLine()
-                                .AppendLine("Here's the list of currently supported networks:")
+                                .AppendLine("Here's the list of currently supported blockchains:")
                                 .AppendLine()
-                                .AppendJoin(" / ", BitconfirmCommand.SupportedNetworks)
+                                .AppendJoin(" / ", Data.Api.GetFormattedSupportedBlockchains())
                                 .ToString());
 
                             return;
@@ -124,7 +159,7 @@ namespace BitconfirmBot
                         commandArgs = new[] { txid, confirmations.ToString() };
                     }
                 }
-                else if (update.Message?.NewChatMembers?.Any(u => u.Username == BotUsername) ?? false)
+                else if (update.Message?.NewChatMembers?.Any(u => u.Username == Data.BotUsername) ?? false)
                 {
                     command = _commands.Single(c => c is StartCommand);
                 }

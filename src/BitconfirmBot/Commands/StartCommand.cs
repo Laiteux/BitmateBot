@@ -17,7 +17,7 @@ namespace BitconfirmBot.Commands
             bool groupAdd = message.Type == MessageType.ChatMembersAdded;
 
             var text = new StringBuilder()
-                .AppendLine($"👋 Hi {(groupAdd ? "there" : message.From.FirstName)}, I'm @{Program.BotUsername} and I can help you keep track of your crypto transaction confirmations!")
+                .AppendLine($"👋 Hi {(groupAdd ? "there" : message.From.FirstName)}, I'm @{Program.Data.BotUsername} and I can help you keep track of your crypto transaction confirmations!")
                 .AppendLine()
                 .AppendLine("You can use the /bitconfirm command so I can start tracking your transaction and notify you when it confirms.")
                 .AppendLine()

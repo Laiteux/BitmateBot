@@ -1,18 +1,27 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using BitconfirmBot.Extensions;
 using BitconfirmBot.Models;
-using BitconfirmBot.Services.SoChain;
-using BitconfirmBot.Services.SoChain.Responses;
+using BitconfirmBot.Services.Cache;
+using BitconfirmBot.Services.Crypto;
+using BitconfirmBot.Services.Crypto.Models;
 using Telegram.Bot;
 using Telegram.Bot.Types;
+using Telegram.Bot.Types.Enums;
 
 namespace BitconfirmBot.Commands
 {
     public class BitconfirmCommand : Command
     {
+        private static CryptoApi Api => Program.Data.Api;
+
+        private static CacheService Cache => Program.Data.Cache;
+
+        private static int _currentlyMonitoredTransactions;
+
         public BitconfirmCommand() : base("bitconfirm")
         {
         }
@@ -23,46 +32,43 @@ namespace BitconfirmBot.Commands
             { "confirmations", false }
         };
 
-        /// <summary>
-        /// <see href="https://chain.so/api/#networks-supported"/><br/>
-        /// By descending priority order (so auto-detection is faster in most cases)
-        /// </summary>
-        public static readonly string[] SupportedNetworks = { "BTC", "LTC", "DOGE", "DASH", "ZEC" };
-
-        private static readonly SoChainService _soChain = new();
-
-        private static int _currentlyMonitoredTransactions;
-
         protected override async Task ExecuteAsync(ITelegramBotClient bot, Message message, string[] args)
         {
-            string network = null;
+            string blockchain = null;
             string txid = args[0];
-            int confirmations = args.Length < 2 ? 1 : int.Parse(args[1]);
+            long confirmations = args.Length < 2 ? 1 : long.Parse(args[1]);
 
-            ResponseBase<TxConfirmationInfoResponse> txConfirmationInfo = null;
+            Transaction transaction = null;
 
-            foreach (string supportedNetwork in SupportedNetworks)
+            var blockchains = txid.StartsWith("0x")
+                ? Api.EthereumBlockchains
+                : Api.SupportedBlockchains.Except(Api.EthereumBlockchains ?? Array.Empty<string>());
+
+            var blockchainLocationMessage = await bot.SendTextMessageAsync(message.Chat, "🔄 Locating transaction...");
+
+            foreach (string supportedBlockchain in blockchains)
             {
-                txConfirmationInfo = await _soChain.GetTxConfirmationInfoAsync(supportedNetwork, txid);
+                transaction = await Api.GetTransactionAsync(supportedBlockchain, txid);
 
-                if (txConfirmationInfo.IsSuccessful())
+                if (transaction.Found)
                 {
-                    network = supportedNetwork;
+                    blockchain = supportedBlockchain;
 
-                    await bot.SendTextMessageAsync(message.Chat, $"🌐 Found transaction on the {network} network.");
+                    await bot.EditMessageTextAsync(blockchainLocationMessage.Chat, blockchainLocationMessage.MessageId,
+                        $"🌐 Found transaction on the {CryptoApi.FormatBlockchainName(blockchain)} blockchain.");
 
                     break;
                 }
             }
 
-            if (network == null)
+            if (blockchain == null)
             {
-                await bot.SendTextMessageAsync(message.Chat, new StringBuilder()
-                    .AppendLine("😓 Sorry, I was unable to detect what network this transaction belongs to.")
+                await bot.EditMessageTextAsync(blockchainLocationMessage.Chat, blockchainLocationMessage.MessageId, new StringBuilder()
+                    .AppendLine("😓 Sorry, I was unable to locate this transaction on any blockchain.")
                     .AppendLine()
-                    .AppendLine("Here's the list of currently supported networks:")
+                    .AppendLine("Here's the list of currently supported blockchains:")
                     .AppendLine()
-                    .AppendJoin(" / ", SupportedNetworks)
+                    .AppendJoin(" / ", Api.GetFormattedSupportedBlockchains())
                     .ToString());
 
                 return;
@@ -77,11 +83,11 @@ namespace BitconfirmBot.Commands
                 return;
             }
 
-            if (txConfirmationInfo.IsSuccessful())
+            if (transaction.Found)
             {
-                if (txConfirmationInfo.Data.Confirmations >= confirmations)
+                if (transaction.Confirmations >= confirmations)
                 {
-                    await bot.SendTextMessageAsync(message.Chat, $"⚠️ Your transaction has already hit {txConfirmationInfo.Data.Confirmations} {"confirmation".Pluralize(txConfirmationInfo.Data.Confirmations)}.");
+                    await bot.SendTextMessageAsync(message.Chat, $"❎ Your transaction has already hit {transaction.Confirmations} {"confirmation".Pluralize(transaction.Confirmations)}.");
 
                     return;
                 }
@@ -95,25 +101,24 @@ namespace BitconfirmBot.Commands
                 return;
             }
 
-            var transaction = new Transaction(network, txid, confirmations, message);
+            var cachedTransaction = new CachedTransaction(Program.Data.Settings.Api, blockchain, txid, confirmations, message);
 
-            Program.Cache.Add(transaction);
+            Cache.Add(cachedTransaction);
 
-            await StartMonitoringTransactionAsync(bot, transaction, txConfirmationInfo);
+            await StartMonitoringTransactionAsync(bot, cachedTransaction, transaction);
         }
 
-        public static async Task StartMonitoringTransactionAsync(ITelegramBotClient bot, Transaction transaction, ResponseBase<TxConfirmationInfoResponse> txConfirmationInfo = null)
+        public static async Task StartMonitoringTransactionAsync(ITelegramBotClient bot, CachedTransaction cachedTransaction, Transaction transaction = null)
         {
-            string network = transaction.Network;
-            string txid = transaction.TxId;
-            int confirmations = transaction.Confirmations;
-            var message = transaction.Message;
+            string network = cachedTransaction.Blockchain;
+            string txid = cachedTransaction.TxId;
+            long confirmations = cachedTransaction.Confirmations;
+            var message = cachedTransaction.Message;
 
-            txConfirmationInfo ??= await _soChain.GetTxConfirmationInfoAsync(network, txid);
-            bool confirmed = txConfirmationInfo.Data.Confirmations > 0;
+            transaction ??= await Api.GetTransactionAsync(network, txid);
+            bool oneConfirmation = transaction.Confirmations > 0;
 
-            var networkInfo = await _soChain.GetNetworkInfoAsync(network);
-            long lastBlock = networkInfo.Data.Blocks;
+            long savedHeight = 0;
             bool newBlock = false;
 
             _currentlyMonitoredTransactions++;
@@ -122,69 +127,111 @@ namespace BitconfirmBot.Commands
             {
                 try
                 {
-                    txConfirmationInfo = await _soChain.GetTxConfirmationInfoAsync(network, txid);
+                    transaction = await Api.GetTransactionAsync(network, txid);
 
-                    if (txConfirmationInfo.Data.Confirmations >= confirmations)
+                    if (transaction.Confirmations >= confirmations)
                     {
                         await bot.SendTextMessageAsync(message.Chat,
-                            $"✅ Your transaction just hit {txConfirmationInfo.Data.Confirmations} {"confirmation".Pluralize(txConfirmationInfo.Data.Confirmations)}!",
+                            $"✅ Your transaction just hit {transaction.Confirmations} {"confirmation".Pluralize(transaction.Confirmations)}!",
                             replyToMessageId: message.MessageId);
 
                         break;
                     }
 
-                    if (!confirmed)
+                    if (transaction.DoubleSpent)
                     {
-                        networkInfo = await _soChain.GetNetworkInfoAsync(network);
+                        var text = new StringBuilder()
+                            .AppendLine("⚠️ Your transaction has been double-spent!")
+                            .AppendLine()
+                            .AppendLine("This could be either because the sender reversed it, or accelerated it by increasing the fee.");
 
-                        if (networkInfo.Data.Blocks > lastBlock)
+                        if (transaction.DoubleSpentTxId != null)
                         {
-                            if (newBlock)
-                            {
-                                await bot.SendTextMessageAsync(message.Chat,
-                                    $"⛏ New block #{lastBlock} was mined but your transaction didn't make it through, too low fees.",
-                                    replyToMessageId: message.MessageId);
+                            text.AppendLine()
+                                .AppendLine($"Here is the replacement transaction: [{transaction.DoubleSpentTxId}](https://live.blockcypher.com/btc/tx/{transaction.DoubleSpentTxId}/)");
+                        }
 
-                                lastBlock = networkInfo.Data.Blocks;
-                                newBlock = false;
+                        text.AppendLine()
+                            .AppendLine("*Be extremely careful when accepting this transaction!*");
+
+                        await bot.SendTextMessageAsync(message.Chat, text.ToString(),
+                            ParseMode.Markdown,
+                            disableWebPagePreview: true,
+                            replyToMessageId: message.MessageId);
+
+                        break;
+                    }
+
+                    if (!oneConfirmation)
+                    {
+                        try
+                        {
+                            long height = await Api.GetBlockchainHeightAsync(network);
+
+                            if (savedHeight == 0)
+                            {
+                                savedHeight = height;
                             }
                             else
                             {
-                                newBlock = true;
+                                if (height > savedHeight)
+                                {
+                                    if (newBlock)
+                                    {
+                                        await bot.SendTextMessageAsync(message.Chat,
+                                            $"⛏ New block #{height} was mined but your transaction didn't make it through, most likely because of the fees being too low.",
+                                            ParseMode.Markdown,
+                                            replyToMessageId: message.MessageId);
+
+                                        savedHeight = height;
+                                        newBlock = false;
+                                    }
+                                    else
+                                    {
+                                        newBlock = true;
+                                    }
+                                }
+
+                                if (transaction.Confirmations > 0)
+                                {
+                                    await bot.SendTextMessageAsync(message.Chat, new StringBuilder()
+                                            .AppendLine($"⛏ New block #{height} was mined and your transaction just made it through.")
+                                            .AppendLine()
+                                            .AppendLine($"⏳ {confirmations - 1} more until it hits {confirmations} confirmations...")
+                                            .ToString(),
+                                        replyToMessageId: message.MessageId);
+
+                                    oneConfirmation = true;
+                                }
                             }
                         }
-
-                        if (txConfirmationInfo.Data.Confirmations > 0)
+                        catch
                         {
-                            await bot.SendTextMessageAsync(message.Chat, new StringBuilder()
-                                    .AppendLine($"⛏ New block #{networkInfo.Data.Blocks} was mined and your transaction just made it through.")
-                                    .AppendLine()
-                                    .AppendLine($"⏳ {confirmations - 1} more until it hits {confirmations} confirmations...")
-                                    .ToString(),
-                                replyToMessageId: message.MessageId);
-
-                            confirmed = true;
+                            // ignored
                         }
                     }
                 }
                 catch
                 {
-                    // Ignore
+                    // ignored
                 }
                 finally
                 {
-                    // https://chain.so/api/#rate-limits
-                    const double maxRequestsPerMinute = (double)(300 - 30) / 2; // -30 (-10%) for safety, /2 because we send up to 2 requests for each transaction
+                    if (Api.MaxRequestsPerHour != 0)
+                    {
+                        double maxRequestsPerMinute = Api.MaxRequestsPerHour - Api.MaxRequestsPerHour * 0.10; // -10% for safety
+                        maxRequestsPerMinute /= 2; // /2 because we send up to 2 requests for each transaction (TODO: Make this dynamic)
 
-                    double delaySeconds = 60 / (maxRequestsPerMinute / _currentlyMonitoredTransactions);
+                        double delaySeconds = 60 / (maxRequestsPerMinute / _currentlyMonitoredTransactions);
 
-                    await Task.Delay(TimeSpan.FromSeconds(Math.Max(1, delaySeconds)));
+                        await Task.Delay(TimeSpan.FromSeconds(Math.Max(1, delaySeconds)));
+                    }
                 }
             }
 
             _currentlyMonitoredTransactions--;
 
-            Program.Cache.Remove(transaction);
+            Cache.Remove(cachedTransaction);
         }
     }
 }

@@ -17,17 +17,17 @@ namespace BitconfirmBot.Services.Cache
             _jsonSerializerOptions = jsonSerializerOptions;
         }
 
-        public List<Transaction> Read()
+        public List<CachedTransaction> Read()
         {
             lock (_locker)
             {
                 string cacheJson = File.ReadAllText(_cacheFilePath);
 
-                return JsonSerializer.Deserialize<List<Transaction>>(cacheJson, _jsonSerializerOptions);
+                return JsonSerializer.Deserialize<List<CachedTransaction>>(cacheJson, _jsonSerializerOptions);
             }
         }
 
-        public void Write(List<Transaction> cache)
+        public void Write(List<CachedTransaction> cache)
         {
             lock (_locker)
             {
@@ -37,7 +37,7 @@ namespace BitconfirmBot.Services.Cache
             }
         }
 
-        public void Add(Transaction transaction)
+        public void Add(CachedTransaction transaction)
         {
             lock (_locker)
             {
@@ -49,7 +49,7 @@ namespace BitconfirmBot.Services.Cache
             }
         }
 
-        public void Remove(Transaction transaction)
+        public void Remove(CachedTransaction transaction)
         {
             lock (_locker)
             {
