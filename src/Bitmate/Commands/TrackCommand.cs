@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Bitmate.Extensions;
 using Bitmate.Models;
 using Bitmate.Services.Cache;
+using Bitmate.Services.Cache.Models;
 using Bitmate.Services.Crypto;
 using Bitmate.Services.Crypto.Models;
 using Telegram.Bot;
