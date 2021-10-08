@@ -22,7 +22,7 @@ namespace Bitmate.Commands
 
         private static int _currentlyMonitoredTransactions;
 
-        public TrackCommand() : base("track")
+        public TrackCommand() : base("track", "bitconfirm")
         {
         }
 

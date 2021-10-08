@@ -43,8 +43,8 @@ namespace Bitmate
 
             Data.Bot.StartReceiving(HandleUpdate, HandleError, new ReceiverOptions()
             {
-                AllowedUpdates = new[] { UpdateType.Message, UpdateType.CallbackQuery, UpdateType.ChatMember },
-                
+                AllowedUpdates = new[] { UpdateType.Message, UpdateType.CallbackQuery, UpdateType.ChatMember }
+
             });
 
             Console.WriteLine($"[+] @{Data.BotUsername} started!");
@@ -128,12 +128,17 @@ namespace Bitmate
                     {
                         string commandName = message.Text.TrimStart('/').Split(' ').First();
 
-                        if (commandName.Contains('@') && !commandName.EndsWith("@" + Data.BotUsername, StringComparison.OrdinalIgnoreCase))
-                            return;
+                        if (commandName.Contains('@'))
+                        {
+                            if (!commandName.EndsWith("@" + Data.BotUsername, StringComparison.OrdinalIgnoreCase))
+                            {
+                                return;
+                            }
 
-                        commandName = commandName.Split('@').First().ToLower();
+                            commandName = commandName.Split('@').First();
+                        }
 
-                        command = _commands.SingleOrDefault(c => c.Name == commandName);
+                        command = _commands.SingleOrDefault(c => c.Name.Contains(commandName, StringComparer.OrdinalIgnoreCase));
                         commandArgs = message.Text.Split(' ', StringSplitOptions.RemoveEmptyEntries).Skip(1).ToArray();
                     }
                     else
