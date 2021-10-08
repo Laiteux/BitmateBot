@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace BitconfirmBot.Utilities
+namespace Bitmate.Utilities
 {
     public class CircularList<T> : List<T>
     {

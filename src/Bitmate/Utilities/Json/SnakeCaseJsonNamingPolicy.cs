@@ -2,7 +2,7 @@ using System;
 using System.Text;
 using System.Text.Json;
 
-namespace BitconfirmBot.Utilities.Json
+namespace Bitmate.Utilities.Json
 {
     /// <summary>
     /// Stolen from <see href="https://github.com/dotnet/corefx/pull/40003"/>

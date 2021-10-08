@@ -3,7 +3,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Telegram.Bot.Types;
 
-namespace BitconfirmBot.Models
+namespace Bitmate.Models
 {
     public class CachedTransaction
     {

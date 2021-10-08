@@ -4,13 +4,13 @@ using System.Net;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
-using BitconfirmBot.Models;
-using BitconfirmBot.Services.Crypto.BlockCypher.Exceptions;
-using BitconfirmBot.Services.Crypto.BlockCypher.Responses;
-using BitconfirmBot.Services.Crypto.Models;
-using BitconfirmBot.Utilities.Json;
+using Bitmate.Models;
+using Bitmate.Services.Crypto.BlockCypher.Exceptions;
+using Bitmate.Services.Crypto.BlockCypher.Responses;
+using Bitmate.Services.Crypto.Models;
+using Bitmate.Utilities.Json;
 
-namespace BitconfirmBot.Services.Crypto.BlockCypher
+namespace Bitmate.Services.Crypto.BlockCypher
 {
     public class BlockCypherService : CryptoApi
     {

@@ -2,17 +2,17 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
-using BitconfirmBot.Extensions;
-using BitconfirmBot.Models;
-using BitconfirmBot.Services.Cache;
-using BitconfirmBot.Services.Crypto;
-using BitconfirmBot.Services.Crypto.Models;
+using Bitmate.Extensions;
+using Bitmate.Models;
+using Bitmate.Services.Cache;
+using Bitmate.Services.Crypto;
+using Bitmate.Services.Crypto.Models;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
 
-namespace BitconfirmBot.Commands
+namespace Bitmate.Commands
 {
     public class TrackCommand : Command
     {

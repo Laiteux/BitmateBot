@@ -1,4 +1,4 @@
-﻿namespace BitconfirmBot.Models
+﻿namespace Bitmate.Models
 {
     public class Settings
     {

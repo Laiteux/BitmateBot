@@ -2,7 +2,7 @@
 using System.Net;
 using System.Net.Http;
 
-namespace BitconfirmBot.Models
+namespace Bitmate.Models
 {
     public class Proxy
     {

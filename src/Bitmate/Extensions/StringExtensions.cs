@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace BitconfirmBot.Extensions
+namespace Bitmate.Extensions
 {
     public static class StringExtensions
     {

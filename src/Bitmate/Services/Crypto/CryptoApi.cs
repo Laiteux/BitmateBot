@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
-using BitconfirmBot.Models;
-using BitconfirmBot.Services.Crypto.Models;
-using BitconfirmBot.Utilities;
+using Bitmate.Models;
+using Bitmate.Services.Crypto.Models;
+using Bitmate.Utilities;
 
-namespace BitconfirmBot.Services.Crypto
+namespace Bitmate.Services.Crypto
 {
     public abstract class CryptoApi
     {

@@ -3,7 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Telegram.Bot.Types.ReplyMarkups;
 
-namespace BitconfirmBot.Utilities.Json
+namespace Bitmate.Utilities.Json
 {
     public class InlineKeyboardMarkupJsonConverter : JsonConverter<InlineKeyboardMarkup>
     {

@@ -1,4 +1,4 @@
-﻿namespace BitconfirmBot.Services.Crypto.BlockCypher.Responses
+﻿namespace Bitmate.Services.Crypto.BlockCypher.Responses
 {
     /// <summary>
     /// Not complete<br/>

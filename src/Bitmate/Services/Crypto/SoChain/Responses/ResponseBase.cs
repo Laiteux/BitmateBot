@@ -1,4 +1,4 @@
-﻿namespace BitconfirmBot.Services.Crypto.SoChain.Responses
+﻿namespace Bitmate.Services.Crypto.SoChain.Responses
 {
     public class ResponseBase<T>
     {

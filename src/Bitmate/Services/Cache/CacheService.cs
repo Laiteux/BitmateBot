@@ -1,12 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
-using BitconfirmBot.Models;
-using BitconfirmBot.Utilities.Json;
+using Bitmate.Models;
+using Bitmate.Utilities.Json;
 
-namespace BitconfirmBot.Services.Cache
+namespace Bitmate.Services.Cache
 {
     public class CacheService
     {

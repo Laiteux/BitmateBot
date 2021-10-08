@@ -1,9 +1,9 @@
 ﻿using System.Collections.Generic;
-using BitconfirmBot.Services.Cache;
-using BitconfirmBot.Services.Crypto;
+using Bitmate.Services.Cache;
+using Bitmate.Services.Crypto;
 using Telegram.Bot;
 
-namespace BitconfirmBot.Models
+namespace Bitmate.Models
 {
     public class Data
     {

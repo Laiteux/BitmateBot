@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace BitconfirmBot.Extensions
+namespace Bitmate.Extensions
 {
     public static class EnumerableExtensions
     {

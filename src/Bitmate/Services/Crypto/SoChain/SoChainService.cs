@@ -4,12 +4,12 @@ using System.Net;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
-using BitconfirmBot.Models;
-using BitconfirmBot.Services.Crypto.Models;
-using BitconfirmBot.Services.Crypto.SoChain.Responses;
-using BitconfirmBot.Utilities.Json;
+using Bitmate.Models;
+using Bitmate.Services.Crypto.Models;
+using Bitmate.Services.Crypto.SoChain.Responses;
+using Bitmate.Utilities.Json;
 
-namespace BitconfirmBot.Services.Crypto.SoChain
+namespace Bitmate.Services.Crypto.SoChain
 {
     public class SoChainService : CryptoApi
     {

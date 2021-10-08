@@ -9,12 +9,12 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using BitconfirmBot.Commands;
-using BitconfirmBot.Extensions;
-using BitconfirmBot.Helpers;
-using BitconfirmBot.Models;
-using BitconfirmBot.Services.Cache;
-using BitconfirmBot.Services.Crypto;
+using Bitmate.Commands;
+using Bitmate.Extensions;
+using Bitmate.Helpers;
+using Bitmate.Models;
+using Bitmate.Services.Cache;
+using Bitmate.Services.Crypto;
 using Telegram.Bot;
 using Telegram.Bot.Extensions.Polling;
 using Telegram.Bot.Types;
@@ -22,7 +22,7 @@ using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
 using File = System.IO.File;
 
-namespace BitconfirmBot
+namespace Bitmate
 {
     public static class Program
     {

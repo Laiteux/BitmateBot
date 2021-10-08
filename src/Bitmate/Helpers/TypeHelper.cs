@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace BitconfirmBot.Helpers
+namespace Bitmate.Helpers
 {
     public static class TypeHelper
     {

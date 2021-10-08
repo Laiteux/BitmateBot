@@ -1,4 +1,4 @@
-﻿namespace BitconfirmBot.Services.Crypto.Models
+﻿namespace Bitmate.Services.Crypto.Models
 {
     public class Transaction
     {

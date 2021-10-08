@@ -5,7 +5,7 @@ using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 
-namespace BitconfirmBot.Commands
+namespace Bitmate.Commands
 {
     public abstract class Command
     {
