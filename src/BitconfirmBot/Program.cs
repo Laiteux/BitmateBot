@@ -145,7 +145,7 @@ namespace BitconfirmBot
                         if (!match.Success)
                             return;
 
-                        if (match.Groups[3].Success && Data.Api.EthereumBlockchains == null)
+                        if (match.Groups[3].Success && !Data.Api.IsEthBlockchainSupported)
                         {
                             await bot.SendTextMessageAsync(message.Chat, new StringBuilder()
                                 .AppendLine("😔 Sorry, Ethereum tokens aren't supported as of right now.")

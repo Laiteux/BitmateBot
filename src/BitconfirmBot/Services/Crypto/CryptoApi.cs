@@ -16,10 +16,7 @@ namespace BitconfirmBot.Services.Crypto
         /// </summary>
         public abstract string[] SupportedBlockchains { get; }
 
-        /// <summary>
-        /// <inheritdoc cref="SupportedBlockchains"/>
-        /// </summary>
-        public virtual string[] EthereumBlockchains { get; set; }
+        public bool IsEthBlockchainSupported => GetFormattedSupportedBlockchains().Contains("ETH");
 
         /// <summary>
         /// Set to <c>0</c> to disable
@@ -66,6 +63,6 @@ namespace BitconfirmBot.Services.Crypto
             => name.Split('/')[0].ToUpper();
 
         public IEnumerable<string> GetFormattedSupportedBlockchains()
-            => SupportedBlockchains.Concat(EthereumBlockchains).Select(FormatBlockchainName);
+            => SupportedBlockchains.Select(FormatBlockchainName);
     }
 }

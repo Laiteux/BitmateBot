@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using BitconfirmBot.Extensions;
@@ -41,13 +40,9 @@ namespace BitconfirmBot.Commands
 
             Transaction transaction = null;
 
-            var blockchains = txid.StartsWith("0x")
-                ? Api.EthereumBlockchains
-                : Api.SupportedBlockchains.Except(Api.EthereumBlockchains ?? Array.Empty<string>());
+            var locatingTransactionMessage = await bot.SendTextMessageAsync(message.Chat, "🔄 Locating transaction...");
 
-            var blockchainLocationMessage = await bot.SendTextMessageAsync(message.Chat, "🔄 Locating transaction...");
-
-            foreach (string supportedBlockchain in blockchains)
+            foreach (string supportedBlockchain in Api.SupportedBlockchains)
             {
                 transaction = await Api.GetTransactionAsync(supportedBlockchain, txid);
 
@@ -55,7 +50,7 @@ namespace BitconfirmBot.Commands
                 {
                     blockchain = supportedBlockchain;
 
-                    await bot.EditMessageTextAsync(blockchainLocationMessage.Chat, blockchainLocationMessage.MessageId,
+                    await bot.EditMessageTextAsync(locatingTransactionMessage.Chat, locatingTransactionMessage.MessageId,
                         $"🌐 Transaction found on the {CryptoApi.FormatBlockchainName(blockchain)} blockchain.");
 
                     break;
@@ -64,7 +59,7 @@ namespace BitconfirmBot.Commands
 
             if (blockchain == null)
             {
-                await bot.EditMessageTextAsync(blockchainLocationMessage.Chat, blockchainLocationMessage.MessageId, new StringBuilder()
+                await bot.EditMessageTextAsync(locatingTransactionMessage.Chat, locatingTransactionMessage.MessageId, new StringBuilder()
                     .AppendLine("😓 Sorry, I was unable to locate this transaction on any blockchain.")
                     .AppendLine()
                     .AppendLine("Here's the list of currently supported blockchains:")

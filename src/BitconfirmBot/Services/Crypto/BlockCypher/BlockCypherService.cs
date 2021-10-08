@@ -19,16 +19,8 @@ namespace BitconfirmBot.Services.Crypto.BlockCypher
         /// </summary>
         public override string[] SupportedBlockchains { get; } =
         {
-            "btc/main", "ltc/main", "doge/main", "dash/main",
+            "btc/main", "eth/main", "ltc/main", "doge/main", "dash/main",
             "btc/test3"
-        };
-
-        /// <summary>
-        /// <see href="https://www.blockcypher.com/dev/ethereum/#restful-resources"/>
-        /// </summary>
-        public override string[] EthereumBlockchains { get; set; } =
-        {
-            "eth/main"
         };
 
         /// <summary>
