@@ -56,7 +56,7 @@ namespace BitconfirmBot.Commands
                     blockchain = supportedBlockchain;
 
                     await bot.EditMessageTextAsync(blockchainLocationMessage.Chat, blockchainLocationMessage.MessageId,
-                        $"🌐 Found transaction on the {CryptoApi.FormatBlockchainName(blockchain)} blockchain.");
+                        $"🌐 Transaction found on the {CryptoApi.FormatBlockchainName(blockchain)} blockchain.");
 
                     break;
                 }
@@ -75,7 +75,7 @@ namespace BitconfirmBot.Commands
                 return;
             }
 
-            var cachedTransaction = new CachedTransaction(Program.Data.Settings.Api.ToLower(), blockchain, txid, confirmations, message);
+            var cachedTransaction = new CachedTransaction(Program.Data.Settings.Api, blockchain, txid, confirmations, message);
 
             if (Cache.TryGet(cachedTransaction, out var found))
             {
@@ -98,7 +98,7 @@ namespace BitconfirmBot.Commands
             {
                 if (transaction.Confirmations >= confirmations)
                 {
-                    await bot.SendTextMessageAsync(message.Chat, $"❎ Your transaction has already hit {transaction.Confirmations} {"confirmation".Pluralize(transaction.Confirmations)}.");
+                    await bot.SendTextMessageAsync(message.Chat, $"❎ Your transaction has already reached {transaction.Confirmations} {"confirmation".Pluralize(transaction.Confirmations)}.");
 
                     return;
                 }

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Security.Cryptography;
 using System.Text;
-using BitconfirmBot.Utilities;
 using Telegram.Bot.Types;
 
 namespace BitconfirmBot.Models
@@ -10,7 +9,7 @@ namespace BitconfirmBot.Models
     {
         public CachedTransaction(string api, string blockchain, string txid, long confirmations, Message message)
         {
-            Api = api;
+            Api = api.ToLower();
             Blockchain = blockchain;
             TxId = txid;
             Confirmations = confirmations;
@@ -61,6 +60,7 @@ namespace BitconfirmBot.Models
             return BitConverter.ToInt32(hash);
 
             // Can't use this because we need a deterministic value that remains the same between different program runs
+            // See https://andrewlock.net/why-is-string-gethashcode-different-each-time-i-run-my-program-in-net-core/
             // return HashCode.Combine(Api, Blockchain, TxId, Confirmations, Message.MessageId);
         }
     }
