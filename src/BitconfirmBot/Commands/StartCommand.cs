@@ -16,22 +16,34 @@ namespace BitconfirmBot.Commands
         {
             bool groupAdd = message.Type == MessageType.ChatMembersAdded;
 
-            var text = new StringBuilder()
-                .AppendLine($"👋 Hi {(groupAdd ? "there" : message.From.FirstName)}, I'm @{Program.Data.BotUsername} and I can help you keep track of your crypto transaction confirmations!")
+            string userName = groupAdd || (message.From.FirstName.Length == 1 && !char.IsLetterOrDigit(message.From.FirstName[0]))
+                ? (groupAdd ? "mates" : "mate")
+                : message.From.FirstName;
+
+            await bot.SendTextMessageAsync(message.Chat, $"👋 Hey {userName}! I'm Bitmate and I will be your #1 crypto companion from now on.");
+
+            await bot.SendTextMessageAsync(message.Chat, new StringBuilder()
+                .AppendLine("*Here are a few things I can do for you:*")
                 .AppendLine()
-                .AppendLine("You can use the /bitconfirm command so I can start tracking your transaction and notify you when it confirms.")
+                .AppendLine("✅ Track your transaction confirmations")
+                .AppendLine("⛏ Notify you about mined blocks")
+                .AppendLine("🔄 Let you know on double-spend attempts")
+                .AppendLine("➕ And more!")
                 .AppendLine()
-                .AppendLine("Or just send me your raw transaction hash or link and I will attempt to auto-detect which network it belongs to.")
+                .AppendLine("*Coming soon:*")
                 .AppendLine()
-                .AppendLine("Tip: You can also append a number at the end of your message to specify after how many confirmations you want to be notified.");
+                .AppendLine("💱 Currency conversion")
+                .AppendLine("💰 Cryptocurrency prices")
+                .AppendLine("📊 Live recommended fees")
+                .AppendLine("🔎 Smart inline mode")
+                .ToString(), ParseMode.Markdown);
+
+            await bot.SendTextMessageAsync(message.Chat, "🔗 Send me a transaction hash or URL to get started.");
 
             if (!groupAdd)
             {
-                text.AppendLine()
-                    .AppendLine("Psst, I work in groups too! Add me in the middle of a deal and I'll be happy to help with tracking a payment 😉");
+                await bot.SendTextMessageAsync(message.Chat, "👥 Psst, I also work in groups! Add me in the middle of a deal and I'll be happy to help with tracking a transaction.");
             }
-
-            await bot.SendTextMessageAsync(message.Chat, text.ToString());
         }
     }
 }

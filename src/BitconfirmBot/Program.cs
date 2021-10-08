@@ -43,7 +43,8 @@ namespace BitconfirmBot
 
             Data.Bot.StartReceiving(HandleUpdate, HandleError, new ReceiverOptions()
             {
-                AllowedUpdates = new[] { UpdateType.Message, UpdateType.CallbackQuery, UpdateType.ChatMember }
+                AllowedUpdates = new[] { UpdateType.Message, UpdateType.CallbackQuery, UpdateType.ChatMember },
+                
             });
 
             Console.WriteLine($"[+] @{Data.BotUsername} started!");
@@ -86,7 +87,7 @@ namespace BitconfirmBot
                     {
                         try
                         {
-                            await BitconfirmCommand.StartMonitoringTransactionAsync(Data.Bot, transaction);
+                            await TrackCommand.StartMonitoringTransactionAsync(Data.Bot, transaction);
                         }
                         catch (Exception ex)
                         {
@@ -161,7 +162,7 @@ namespace BitconfirmBot
                         string txid = match.Groups[2].Value;
                         int confirmations = splittedMessage.Length < 2 ? 1 : int.Parse(splittedMessage[1]);
 
-                        command = _commands.Single(c => c is BitconfirmCommand);
+                        command = _commands.Single(c => c is TrackCommand);
                         commandArgs = new[] { txid, confirmations.ToString() };
                     }
                 }
@@ -205,6 +206,13 @@ namespace BitconfirmBot
                     {
                         try
                         {
+                            if (Data.BotUsername == "BitconfirmBot")
+                            {
+                                await bot.SendTextMessageAsync(message.Chat, "ℹ️ Bitconfirm is now Bitmate! Find me here: @BitmateBot");
+
+                                return;
+                            }
+
                             await command.HandleAsync(bot, message, commandArgs);
                         }
                         catch (Exception ex)

@@ -14,7 +14,7 @@ using Telegram.Bot.Types.ReplyMarkups;
 
 namespace BitconfirmBot.Commands
 {
-    public class BitconfirmCommand : Command
+    public class TrackCommand : Command
     {
         private static CryptoApi Api => Program.Data.Api;
 
@@ -22,7 +22,7 @@ namespace BitconfirmBot.Commands
 
         private static int _currentlyMonitoredTransactions;
 
-        public BitconfirmCommand() : base("bitconfirm")
+        public TrackCommand() : base("track")
         {
         }
 
