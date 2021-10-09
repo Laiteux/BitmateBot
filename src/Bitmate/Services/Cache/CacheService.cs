@@ -2,7 +2,6 @@
 using System.IO;
 using System.Linq;
 using System.Text.Json;
-using Bitmate.Models;
 using Bitmate.Services.Cache.Models;
 using Bitmate.Utilities.Json;
 

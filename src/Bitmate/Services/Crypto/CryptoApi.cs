@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
+using Bitmate.Extensions;
 using Bitmate.Models;
 using Bitmate.Services.Crypto.Models;
 using Bitmate.Utilities;
@@ -14,9 +16,12 @@ namespace Bitmate.Services.Crypto
         /// <summary>
         /// By descending priority order to try and make auto detection as fast as possible
         /// </summary>
-        public abstract string[] SupportedBlockchains { get; }
+        public abstract string[] MainBlockchains { get; }
 
-        public bool IsEthBlockchainSupported => GetFormattedSupportedBlockchains().Contains("ETH");
+        /// <summary>
+        /// <inheritdoc cref="MainBlockchains"/>
+        /// </summary>
+        public virtual string[] TestBlockchains { get; }
 
         /// <summary>
         /// Set to <c>0</c> to disable
@@ -28,7 +33,7 @@ namespace Bitmate.Services.Crypto
         private readonly CircularList<HttpClient> _httpClients;
 
         protected HttpClient HttpClient => _httpClients.Next();
-        
+
         protected CryptoApi(HttpClient httpClient = null)
         {
             httpClient ??= new();
@@ -60,9 +65,33 @@ namespace Bitmate.Services.Crypto
             => throw new NotSupportedException();
 
         public static string FormatBlockchainName(string name)
-            => name.Split('/')[0].ToUpper();
+            => name.Split('/')[0].TrimEnd("test", StringComparison.OrdinalIgnoreCase).ToUpper();
 
-        public IEnumerable<string> GetFormattedSupportedBlockchains()
-            => SupportedBlockchains.Select(FormatBlockchainName);
+        public IEnumerable<string> GetFormattedBlockchains(bool test = false)
+            => (test ? TestBlockchains : MainBlockchains).Select(FormatBlockchainName);
+
+        public string BuildSupportedBlockchainsMessage(string error = null)
+        {
+            var message = new StringBuilder();
+
+            if (error != null)
+            {
+                message
+                    .AppendLine(error)
+                    .AppendLine();
+            }
+
+            message
+                .AppendLine($"*🌐 Main blockchains:* {string.Join(" / ", GetFormattedBlockchains())}");
+
+            if (TestBlockchains != null)
+            {
+                message
+                    .AppendLine()
+                    .AppendLine($"*🧪 Test blockchains:* {string.Join(" / ", GetFormattedBlockchains(true))}");
+            }
+
+            return message.ToString();
+        }
     }
 }

@@ -23,24 +23,28 @@ namespace Bitmate.Commands
             await bot.SendTextMessageAsync(message.Chat, $"👋 Hey {userName}! I'm Bitmate and I will be your #1 crypto companion from now on.");
 
             await bot.SendTextMessageAsync(message.Chat, new StringBuilder()
-                .AppendLine("*Here are a few things I can do for you:*")
+                .AppendLine("*Here are a few of my features:*")
                 .AppendLine()
-                .AppendLine("✅ Track your transaction confirmations")
-                .AppendLine("⛏ Notify you about mined blocks")
-                .AppendLine("🔄 Let you know on double-spend attempts")
+                .AppendLine("✅ Confirmations tracking")
+                .AppendLine("⛏ Mined blocks tracking")
+                .AppendLine("🔄 Double-spend detection")
                 .AppendLine("➕ And more!")
                 .AppendLine()
                 .AppendLine("*Coming soon:*")
                 .AppendLine()
-                .AppendLine("💱 Currency conversion")
                 .AppendLine("💰 Cryptocurrency prices")
+                .AppendLine("💱 Currency conversion")
                 .AppendLine("📊 Live recommended fees")
                 .AppendLine("🔎 Smart inline mode")
                 .ToString(), ParseMode.Markdown);
 
-            await bot.SendTextMessageAsync(message.Chat, "🔗 Send me a transaction hash or URL to get started.");
+            await bot.SendTextMessageAsync(message.Chat, new StringBuilder()
+                .AppendLine("🔗 Send me a transaction hash or URL to get started.")
+                .AppendLine()
+                .AppendLine("💡 Pro tip: You can also append a custom amount of confirmations.")
+                .ToString());
 
-            if (!groupAdd)
+            if (!groupAdd && message.Chat.Type == ChatType.Private)
             {
                 await bot.SendTextMessageAsync(message.Chat, "👥 Psst, I also work in groups! Add me in the middle of a deal and I'll be happy to help with tracking a transaction.");
             }

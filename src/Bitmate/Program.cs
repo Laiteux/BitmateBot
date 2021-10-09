@@ -4,7 +4,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
-using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -81,7 +80,7 @@ namespace Bitmate
         {
             foreach (var transaction in Data.Cache.Read())
             {
-                if (transaction.Api == Data.Settings.Api)
+                if (transaction.Api.Equals(Data.Settings.Api, StringComparison.OrdinalIgnoreCase))
                 {
                     _ = Task.Run(async () =>
                     {
@@ -103,6 +102,7 @@ namespace Bitmate
 
                     if (transaction.LastBlockMinedMessage != null)
                     {
+                        // ReSharper disable once RedundantArgumentDefaultValue
                         await Data.Bot.EditMessageReplyMarkupAsync(transaction.LastBlockMinedMessage.Chat, transaction.LastBlockMinedMessage.MessageId, null);
                     }
 
@@ -151,15 +151,11 @@ namespace Bitmate
                         if (!match.Success)
                             return;
 
-                        if (match.Groups[3].Success && !Data.Api.IsEthBlockchainSupported)
+                        if (match.Groups[3].Success && !Data.Api.GetFormattedBlockchains().Contains("ETH"))
                         {
-                            await bot.SendTextMessageAsync(message.Chat, new StringBuilder()
-                                .AppendLine("😔 Sorry, Ethereum tokens aren't supported as of right now.")
-                                .AppendLine()
-                                .AppendLine("Here's the list of currently supported blockchains:")
-                                .AppendLine()
-                                .AppendJoin(" / ", Data.Api.GetFormattedSupportedBlockchains())
-                                .ToString());
+                            await bot.SendTextMessageAsync(message.Chat,
+                                Data.Api.BuildSupportedBlockchainsMessage("😔 Sorry, Ethereum tokens aren't supported as of right now."),
+                                ParseMode.Markdown);
 
                             return;
                         }

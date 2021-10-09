@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Bitmate.Extensions;
-using Bitmate.Models;
 using Bitmate.Services.Cache;
 using Bitmate.Services.Cache.Models;
 using Bitmate.Services.Crypto;
@@ -43,7 +43,7 @@ namespace Bitmate.Commands
 
             var locatingTransactionMessage = await bot.SendTextMessageAsync(message.Chat, "🔄 Locating transaction...");
 
-            foreach (string supportedBlockchain in Api.SupportedBlockchains)
+            foreach (string supportedBlockchain in Api.MainBlockchains.Concat(Api.TestBlockchains))
             {
                 transaction = await Api.GetTransactionAsync(supportedBlockchain, txid);
 
@@ -60,13 +60,9 @@ namespace Bitmate.Commands
 
             if (blockchain == null)
             {
-                await bot.EditMessageTextAsync(locatingTransactionMessage.Chat, locatingTransactionMessage.MessageId, new StringBuilder()
-                    .AppendLine("😓 Sorry, I was unable to locate this transaction on any blockchain.")
-                    .AppendLine()
-                    .AppendLine("Here's the list of currently supported blockchains:")
-                    .AppendLine()
-                    .AppendJoin(" / ", Api.GetFormattedSupportedBlockchains())
-                    .ToString());
+                await bot.EditMessageTextAsync(locatingTransactionMessage.Chat, locatingTransactionMessage.MessageId,
+                    Api.BuildSupportedBlockchainsMessage("😓 Sorry, I was unable to locate this transaction on any blockchain."),
+                    ParseMode.Markdown);
 
                 return;
             }
@@ -119,7 +115,7 @@ namespace Bitmate.Commands
             string txid = cachedTransaction.TxId;
             long confirmations = cachedTransaction.Confirmations;
             var message = cachedTransaction.Message;
-            Message lastBlockMinedMessage = null;
+            Message lastBlockMinedMessage;
 
             transaction ??= await Api.GetTransactionAsync(network, txid);
             bool oneConfirmation = transaction.Confirmations > 0;
@@ -191,6 +187,7 @@ namespace Bitmate.Commands
                                         {
                                             if (lastBlockMinedMessage != null)
                                             {
+                                                // ReSharper disable once RedundantArgumentDefaultValue
                                                 await bot.EditMessageReplyMarkupAsync(lastBlockMinedMessage.Chat, lastBlockMinedMessage.MessageId, null);
                                             }
 
@@ -253,6 +250,7 @@ namespace Bitmate.Commands
 
             if (lastBlockMinedMessage != null)
             {
+                // ReSharper disable once RedundantArgumentDefaultValue
                 await bot.EditMessageReplyMarkupAsync(lastBlockMinedMessage.Chat, lastBlockMinedMessage.MessageId, null);
             }
 

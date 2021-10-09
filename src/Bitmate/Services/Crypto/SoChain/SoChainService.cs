@@ -16,9 +16,16 @@ namespace Bitmate.Services.Crypto.SoChain
         /// <summary>
         /// <see href="https://chain.so/api/#networks-supported"/>
         /// </summary>
-        public override string[] SupportedBlockchains { get; } =
+        public override string[] MainBlockchains { get; } =
         {
-            "BTC", "LTC", "DOGE", "DASH", "ZEC",
+            "BTC", "LTC", "DOGE", "DASH", "ZEC"
+        };
+
+        /// <summary>
+        /// <inheritdoc cref="MainBlockchains"/>
+        /// </summary>
+        public override string[] TestBlockchains { get; } =
+        {
             "BTCTEST", "LTCTEST", "DOGETEST", "DASHTEST", "ZECTEST"
         };
 

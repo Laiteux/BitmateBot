@@ -17,9 +17,16 @@ namespace Bitmate.Services.Crypto.BlockCypher
         /// <summary>
         /// <see href="https://www.blockcypher.com/dev/bitcoin/#restful-resources"/>
         /// </summary>
-        public override string[] SupportedBlockchains { get; } =
+        public override string[] MainBlockchains { get; } =
         {
-            "btc/main", "eth/main", "ltc/main", "doge/main", "dash/main",
+            "btc/main", "eth/main", "ltc/main", "doge/main", "dash/main"
+        };
+
+        /// <summary>
+        /// <inheritdoc cref="MainBlockchains"/>
+        /// </summary>
+        public override string[] TestBlockchains { get; } =
+        {
             "btc/test3"
         };
 
