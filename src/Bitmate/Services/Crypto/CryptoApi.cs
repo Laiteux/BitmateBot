@@ -4,7 +4,6 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
-using Bitmate.Extensions;
 using Bitmate.Models;
 using Bitmate.Services.Crypto.Models;
 using Bitmate.Utilities;
@@ -64,8 +63,7 @@ namespace Bitmate.Services.Crypto
         public virtual Task<long> GetBlockchainHeightAsync(string blockchain)
             => throw new NotSupportedException();
 
-        public static string FormatBlockchainName(string name)
-            => name.Split('/')[0].TrimEnd("test", StringComparison.OrdinalIgnoreCase).ToUpper();
+        public virtual string FormatBlockchainName(string name) => name;
 
         public IEnumerable<string> GetFormattedBlockchains(bool test = false)
             => (test ? TestBlockchains : MainBlockchains).Select(FormatBlockchainName);

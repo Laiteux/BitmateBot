@@ -52,7 +52,7 @@ namespace Bitmate.Commands
                     blockchain = supportedBlockchain;
 
                     await bot.EditMessageTextAsync(locatingTransactionMessage.Chat, locatingTransactionMessage.MessageId,
-                        $"🌐 Transaction found on the {CryptoApi.FormatBlockchainName(blockchain)} blockchain.");
+                        $"🌐 Transaction found on the {Api.FormatBlockchainName(blockchain)} blockchain.");
 
                     break;
                 }

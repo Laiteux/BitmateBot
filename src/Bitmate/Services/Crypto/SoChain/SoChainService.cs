@@ -4,6 +4,7 @@ using System.Net;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Bitmate.Extensions;
 using Bitmate.Models;
 using Bitmate.Services.Crypto.Models;
 using Bitmate.Services.Crypto.SoChain.Responses;
@@ -39,6 +40,8 @@ namespace Bitmate.Services.Crypto.SoChain
         public SoChainService(HttpClient httpClient = null) : base(httpClient) { }
 
         public SoChainService(List<Proxy> proxies) : base(proxies) { }
+
+        public override string FormatBlockchainName(string name) => name.TrimEnd("TEST");
 
         private static readonly JsonSerializerOptions _jsonSerializerOptions = new()
         {

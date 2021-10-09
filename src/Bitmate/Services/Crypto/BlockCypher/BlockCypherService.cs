@@ -45,6 +45,8 @@ namespace Bitmate.Services.Crypto.BlockCypher
 
         public BlockCypherService(List<Proxy> proxies) : base(proxies) { }
 
+        public override string FormatBlockchainName(string name) => name.Split('/')[0].ToUpper();
+
         private static readonly JsonSerializerOptions _jsonSerializerOptions = new()
         {
             PropertyNamingPolicy = new SnakeCaseJsonNamingPolicy()
