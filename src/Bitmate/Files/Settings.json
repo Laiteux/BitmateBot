@@ -1,6 +1,6 @@
 {
   "Token": "YOUR_BOT_TOKEN_HERE",
-  "Api": "BlockCypher",
+  "Api": "SoChain",
   "Proxies": {
     "Use": true,
     "TimeoutSeconds": 5

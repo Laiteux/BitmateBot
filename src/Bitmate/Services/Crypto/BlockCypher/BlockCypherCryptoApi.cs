@@ -38,12 +38,18 @@ namespace Bitmate.Services.Crypto.BlockCypher
 
         protected override Uri BaseAddress { get; } = new("https://api.blockcypher.com/v1/");
 
+        private const string HugeUpdateDelaysAlert = "The BlockCypher API has HUGE update delays, it is not advised to use it";
+
         public BlockCypherCryptoApi(HttpClient httpClient = null) : base(httpClient)
         {
+            Console.WriteLine($"[!] {HugeUpdateDelaysAlert}");
             Console.WriteLine("[!] It is strongly advised to use proxies with the BlockCypher API");
         }
 
-        public BlockCypherCryptoApi(List<Proxy> proxies) : base(proxies) { }
+        public BlockCypherCryptoApi(List<Proxy> proxies) : base(proxies)
+        {
+            Console.WriteLine($"[!] {HugeUpdateDelaysAlert}");
+        }
 
         public override string FormatBlockchainName(string name) => name.Split('/')[0].ToUpper();
 
