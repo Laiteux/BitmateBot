@@ -12,7 +12,7 @@ using Bitmate.Utilities.Json;
 
 namespace Bitmate.Services.Crypto.BlockCypher
 {
-    public class BlockCypherService : CryptoApi
+    public class BlockCypherCryptoApi : CryptoApi
     {
         /// <summary>
         /// <see href="https://www.blockcypher.com/dev/bitcoin/#restful-resources"/>
@@ -38,12 +38,12 @@ namespace Bitmate.Services.Crypto.BlockCypher
 
         protected override Uri BaseAddress { get; } = new("https://api.blockcypher.com/v1/");
 
-        public BlockCypherService(HttpClient httpClient = null) : base(httpClient)
+        public BlockCypherCryptoApi(HttpClient httpClient = null) : base(httpClient)
         {
             Console.WriteLine("[!] It is strongly advised to use proxies with the BlockCypher API");
         }
 
-        public BlockCypherService(List<Proxy> proxies) : base(proxies) { }
+        public BlockCypherCryptoApi(List<Proxy> proxies) : base(proxies) { }
 
         public override string FormatBlockchainName(string name) => name.Split('/')[0].ToUpper();
 

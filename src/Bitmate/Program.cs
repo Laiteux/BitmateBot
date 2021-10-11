@@ -66,7 +66,7 @@ namespace Bitmate
                 .Select(p => new Proxy(p, Data.Settings.Proxies))
                 .ToList();
 
-            var cryptoApi = _cryptoApiTypes.SingleOrDefault(c => c.Name.TrimEnd("Service").Equals(Data.Settings.Api, StringComparison.OrdinalIgnoreCase));
+            var cryptoApi = _cryptoApiTypes.SingleOrDefault(c => c.Name.TrimEnd("CryptoApi").Equals(Data.Settings.Api, StringComparison.OrdinalIgnoreCase));
 
             if (cryptoApi == null)
             {

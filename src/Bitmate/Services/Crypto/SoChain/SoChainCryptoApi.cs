@@ -12,7 +12,7 @@ using Bitmate.Utilities.Json;
 
 namespace Bitmate.Services.Crypto.SoChain
 {
-    public class SoChainService : CryptoApi
+    public class SoChainCryptoApi : CryptoApi
     {
         /// <summary>
         /// <see href="https://chain.so/api/#networks-supported"/>
@@ -37,9 +37,9 @@ namespace Bitmate.Services.Crypto.SoChain
 
         protected override Uri BaseAddress { get; } = new("https://chain.so/api/v2/");
 
-        public SoChainService(HttpClient httpClient = null) : base(httpClient) { }
+        public SoChainCryptoApi(HttpClient httpClient = null) : base(httpClient) { }
 
-        public SoChainService(List<Proxy> proxies) : base(proxies) { }
+        public SoChainCryptoApi(List<Proxy> proxies) : base(proxies) { }
 
         public override string FormatBlockchainName(string name) => name.TrimEnd("TEST");
 
