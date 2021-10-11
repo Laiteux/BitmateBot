@@ -1,5 +1,6 @@
 ﻿using System.Text;
 using System.Threading.Tasks;
+using Bitmate.Services.Crypto;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
@@ -12,7 +13,7 @@ namespace Bitmate.Commands
         {
         }
 
-        protected override async Task ExecuteAsync(ITelegramBotClient bot, Message message, string[] args)
+        protected override async Task ExecuteAsync(ITelegramBotClient bot, CryptoApi api, Message message, string[] args)
         {
             bool groupAdd = message.Type == MessageType.ChatMembersAdded;
 

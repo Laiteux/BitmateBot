@@ -17,8 +17,6 @@ namespace Bitmate.Commands
 {
     public class TrackCommand : Command
     {
-        private static CryptoApi Api => Program.Data.Api;
-
         private static CacheService Cache => Program.Data.Cache;
 
         private static int _currentlyMonitoredTransactions;
@@ -33,7 +31,9 @@ namespace Bitmate.Commands
             { "confirmations", false }
         };
 
-        protected override async Task ExecuteAsync(ITelegramBotClient bot, Message message, string[] args)
+        public override bool UseCryptoApi { get; } = true;
+
+        protected override async Task ExecuteAsync(ITelegramBotClient bot, CryptoApi api, Message message, string[] args)
         {
             string blockchain = null;
             string txid = args[0];
@@ -43,16 +43,16 @@ namespace Bitmate.Commands
 
             var locatingTransactionMessage = await bot.SendTextMessageAsync(message.Chat, "🔄 Locating transaction...");
 
-            foreach (string supportedBlockchain in Api.MainBlockchains.Concat(Api.TestBlockchains))
+            foreach (string supportedBlockchain in api.MainBlockchains.Concat(api.TestBlockchains))
             {
-                transaction = await Api.GetTransactionAsync(supportedBlockchain, txid);
+                transaction = await api.GetTransactionAsync(supportedBlockchain, txid);
 
                 if (transaction.Found)
                 {
                     blockchain = supportedBlockchain;
 
                     await bot.EditMessageTextAsync(locatingTransactionMessage.Chat, locatingTransactionMessage.MessageId,
-                        $"🌐 Transaction found on the {Api.FormatBlockchainName(blockchain)} blockchain.");
+                        $"🌐 Transaction found on the {api.FormatBlockchainName(blockchain)} blockchain.");
 
                     break;
                 }
@@ -61,7 +61,7 @@ namespace Bitmate.Commands
             if (blockchain == null)
             {
                 await bot.EditMessageTextAsync(locatingTransactionMessage.Chat, locatingTransactionMessage.MessageId,
-                    Api.BuildSupportedBlockchainsMessage("😓 Sorry, I was unable to locate this transaction on any blockchain."),
+                    api.BuildSupportedBlockchainsMessage("😓 Sorry, I was unable to locate this transaction on any blockchain."),
                     ParseMode.Markdown);
 
                 return;
@@ -106,10 +106,10 @@ namespace Bitmate.Commands
 
             Cache.Add(cachedTransaction);
 
-            await StartMonitoringTransactionAsync(bot, cachedTransaction, transaction);
+            await StartMonitoringTransactionAsync(bot, api, cachedTransaction, transaction);
         }
 
-        public static async Task StartMonitoringTransactionAsync(ITelegramBotClient bot, CachedTransaction cachedTransaction, Transaction transaction = null)
+        public static async Task StartMonitoringTransactionAsync(ITelegramBotClient bot, CryptoApi api, CachedTransaction cachedTransaction, Transaction transaction = null)
         {
             string network = cachedTransaction.Blockchain;
             string txid = cachedTransaction.TxId;
@@ -117,7 +117,7 @@ namespace Bitmate.Commands
             var message = cachedTransaction.Message;
             Message lastBlockMinedMessage;
 
-            transaction ??= await Api.GetTransactionAsync(network, txid);
+            transaction ??= await api.GetTransactionAsync(network, txid);
             bool oneConfirmation = transaction.Confirmations > 0;
             bool newBlock = false;
 
@@ -131,7 +131,7 @@ namespace Bitmate.Commands
                     Cache.TryGet(cachedTransaction, out cachedTransaction);
                     lastBlockMinedMessage = cachedTransaction.LastBlockMinedMessage;
 
-                    transaction = await Api.GetTransactionAsync(network, txid);
+                    transaction = await api.GetTransactionAsync(network, txid);
 
                     if (transaction.Confirmations >= confirmations)
                     {
@@ -170,7 +170,7 @@ namespace Bitmate.Commands
                     {
                         try
                         {
-                            long height = await Api.GetBlockchainHeightAsync(network);
+                            long height = await api.GetBlockchainHeightAsync(network);
 
                             if (cachedTransaction.LastBlockMined == 0)
                             {
@@ -236,9 +236,9 @@ namespace Bitmate.Commands
                 }
                 finally
                 {
-                    if (Api.MaxRequestsPerHour != 0)
+                    if (api.MaxRequestsPerHour != 0)
                     {
-                        double maxRequestsPerMinute = Api.MaxRequestsPerHour - Api.MaxRequestsPerHour * 0.10; // -10% for safety
+                        double maxRequestsPerMinute = api.MaxRequestsPerHour - api.MaxRequestsPerHour * 0.10; // -10% for safety
                         maxRequestsPerMinute /= 2; // /2 because we send up to 2 requests for each transaction (TODO: Make this dynamic)
 
                         double delaySeconds = 60 / (maxRequestsPerMinute / _currentlyMonitoredTransactions);

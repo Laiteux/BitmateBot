@@ -72,7 +72,7 @@ namespace Bitmate
                 throw new Exception("No API found with this name.");
             }
 
-            Data.Api = (CryptoApi)Activator.CreateInstance(cryptoApi, Data.Settings.Proxies.Use ? Data.Proxies : new HttpClient());
+            Data.SetApi(() => (CryptoApi)Activator.CreateInstance(cryptoApi, Data.Settings.Proxies.Use ? Data.Proxies : new HttpClient()));
         }
 
         private static async Task LoadCache()
@@ -85,7 +85,7 @@ namespace Bitmate
                     {
                         try
                         {
-                            await TrackCommand.StartMonitoringTransactionAsync(Data.Bot, transaction);
+                            await TrackCommand.StartMonitoringTransactionAsync(Data.Bot, Data.FuncApi(), transaction);
                         }
                         catch (Exception ex)
                         {
@@ -150,10 +150,10 @@ namespace Bitmate
                         if (!match.Success)
                             return;
 
-                        if (match.Groups[3].Success && !Data.Api.GetFormattedBlockchains().Contains("ETH"))
+                        if (match.Groups[3].Success && !Data.LazyApi.Value.GetFormattedBlockchains().Contains("ETH"))
                         {
                             await bot.SendTextMessageAsync(message.Chat,
-                                Data.Api.BuildSupportedBlockchainsMessage("😔 Sorry, Ethereum tokens aren't supported as of right now."),
+                                Data.LazyApi.Value.BuildSupportedBlockchainsMessage("😔 Sorry, Ethereum tokens aren't supported as of right now."),
                                 ParseMode.Markdown);
 
                             return;
@@ -213,7 +213,9 @@ namespace Bitmate
                                 return;
                             }
 
-                            await command.HandleAsync(bot, message, commandArgs);
+                            CryptoApi api = command.UseCryptoApi ? Data.FuncApi() : null;
+
+                            await command.HandleAsync(bot, api, message, commandArgs);
                         }
                         catch (Exception ex)
                         {
