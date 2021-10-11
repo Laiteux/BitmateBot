@@ -43,7 +43,6 @@ namespace Bitmate
             Data.Bot.StartReceiving(HandleUpdate, HandleError, new ReceiverOptions()
             {
                 AllowedUpdates = new[] { UpdateType.Message, UpdateType.CallbackQuery, UpdateType.ChatMember }
-
             });
 
             Console.WriteLine($"[+] @{Data.BotUsername} started!");

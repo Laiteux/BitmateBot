@@ -29,12 +29,14 @@ namespace Bitmate.Models
 
         public NetworkCredential Credentials { get; }
 
+        public WebProxy ToWebProxy() => new(Host, Port)
+        {
+            Credentials = Credentials
+        };
+
         public HttpClient GetHttpClient() => new(new HttpClientHandler()
         {
-            Proxy = new WebProxy(Host, Port)
-            {
-                Credentials = Credentials
-            }
+            Proxy = ToWebProxy()
         })
         {
             Timeout = TimeSpan.FromSeconds(Settings.TimeoutSeconds)
