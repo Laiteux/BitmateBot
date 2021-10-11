@@ -58,7 +58,7 @@ namespace Bitmate.Services.Crypto
             MaxRequestsPerHour = 0;
         }
 
-        public abstract Task<Transaction> GetTransactionAsync(string blockchain, string txid);
+        public abstract Task<TrackedTransaction> GetTransactionAsync(string blockchain, string txid);
 
         public virtual Task<long> GetBlockchainHeightAsync(string blockchain)
             => throw new NotSupportedException();

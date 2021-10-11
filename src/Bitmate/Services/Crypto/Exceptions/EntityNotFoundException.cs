@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Bitmate.Services.Crypto.BlockCypher.Exceptions
+namespace Bitmate.Services.Crypto.Exceptions
 {
     public class EntityNotFoundException : Exception
     {

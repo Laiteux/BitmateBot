@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Text.Json;
 
-namespace Bitmate.Services.Crypto.Mempool.Messages
+namespace Bitmate.Services.Crypto.Mempool.Responses
 {
     public class AddressTransaction
     {

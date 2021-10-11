@@ -1,4 +1,4 @@
-﻿namespace Bitmate.Services.Crypto.Mempool.Messages
+﻿namespace Bitmate.Services.Crypto.Mempool.Responses
 {
     /// <summary>
     /// Not complete

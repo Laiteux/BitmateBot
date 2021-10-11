@@ -1,6 +1,6 @@
 ﻿namespace Bitmate.Services.Crypto.Models
 {
-    public class Transaction
+    public class TrackedTransaction
     {
         public bool Found { get; set; }
 

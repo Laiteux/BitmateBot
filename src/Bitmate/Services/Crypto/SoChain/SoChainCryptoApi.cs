@@ -30,6 +30,8 @@ namespace Bitmate.Services.Crypto.SoChain
             "BTCTEST", "LTCTEST", "DOGETEST", "DASHTEST", "ZECTEST"
         };
 
+        public override string FormatBlockchainName(string name) => name.TrimEnd("TEST");
+
         /// <summary>
         /// <see href="https://chain.so/api/#rate-limits"/>
         /// </summary>
@@ -40,8 +42,6 @@ namespace Bitmate.Services.Crypto.SoChain
         public SoChainCryptoApi(HttpClient httpClient = null) : base(httpClient) { }
 
         public SoChainCryptoApi(List<Proxy> proxies) : base(proxies) { }
-
-        public override string FormatBlockchainName(string name) => name.TrimEnd("TEST");
 
         private static readonly JsonSerializerOptions _jsonSerializerOptions = new()
         {
@@ -65,13 +65,13 @@ namespace Bitmate.Services.Crypto.SoChain
             return JsonSerializer.Deserialize<ResponseBase<T>>(responseString, _jsonSerializerOptions);
         }
 
-        public override async Task<Transaction> GetTransactionAsync(string blockchain, string txid)
+        public override async Task<TrackedTransaction> GetTransactionAsync(string blockchain, string txid)
         {
             HttpRequestMessage RequestMessage() => new(HttpMethod.Get, $"is_tx_confirmed/{blockchain}/{txid}");
 
             var txConfirmationInfo = await GetResponseAsync<TxConfirmationInfoResponse>(RequestMessage);
 
-            return new Transaction()
+            return new TrackedTransaction()
             {
                 Found = txConfirmationInfo.IsSuccessful(),
                 Confirmations = txConfirmationInfo.Data?.Confirmations ?? default

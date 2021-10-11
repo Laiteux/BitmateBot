@@ -39,11 +39,11 @@ namespace Bitmate.Commands
             string txid = args[0];
             long confirmations = args.Length < 2 ? 1 : long.Parse(args[1]);
 
-            Transaction transaction = null;
+            TrackedTransaction transaction = null;
 
             var locatingTransactionMessage = await bot.SendTextMessageAsync(message.Chat, "🔄 Locating transaction...");
 
-            foreach (string supportedBlockchain in api.MainBlockchains.Concat(api.TestBlockchains))
+            foreach (string supportedBlockchain in api.MainBlockchains.Concat(api.TestBlockchains ?? Array.Empty<string>()))
             {
                 transaction = await api.GetTransactionAsync(supportedBlockchain, txid);
 
@@ -51,8 +51,10 @@ namespace Bitmate.Commands
                 {
                     blockchain = supportedBlockchain;
 
+                    bool testnet = api.TestBlockchains != null && api.TestBlockchains.Contains(blockchain);
+
                     await bot.EditMessageTextAsync(locatingTransactionMessage.Chat, locatingTransactionMessage.MessageId,
-                        $"🌐 Transaction found on the {api.FormatBlockchainName(blockchain)} blockchain.");
+                        $"🌐 Transaction found on the {api.FormatBlockchainName(blockchain)}{(testnet ? " test" : null)} blockchain.");
 
                     break;
                 }
@@ -109,7 +111,7 @@ namespace Bitmate.Commands
             await StartMonitoringTransactionAsync(bot, api, cachedTransaction, transaction);
         }
 
-        public static async Task StartMonitoringTransactionAsync(ITelegramBotClient bot, CryptoApi api, CachedTransaction cachedTransaction, Transaction transaction = null)
+        public static async Task StartMonitoringTransactionAsync(ITelegramBotClient bot, CryptoApi api, CachedTransaction cachedTransaction, TrackedTransaction transaction = null)
         {
             string network = cachedTransaction.Blockchain;
             string txid = cachedTransaction.TxId;
@@ -236,15 +238,17 @@ namespace Bitmate.Commands
                 }
                 finally
                 {
+                    double delaySeconds = 0;
+
                     if (api.MaxRequestsPerHour != 0)
                     {
                         double maxRequestsPerMinute = api.MaxRequestsPerHour - api.MaxRequestsPerHour * 0.10; // -10% for safety
                         maxRequestsPerMinute /= 2; // /2 because we send up to 2 requests for each transaction (TODO: Make this dynamic)
 
-                        double delaySeconds = 60 / (maxRequestsPerMinute / _currentlyMonitoredTransactions);
-
-                        await Task.Delay(TimeSpan.FromSeconds(Math.Max(1, delaySeconds)));
+                        delaySeconds = 60 / (maxRequestsPerMinute / _currentlyMonitoredTransactions);
                     }
+
+                    await Task.Delay(TimeSpan.FromSeconds(Math.Max(1, delaySeconds)));
                 }
             }
 

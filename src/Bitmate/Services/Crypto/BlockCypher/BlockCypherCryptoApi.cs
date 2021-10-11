@@ -5,8 +5,8 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Bitmate.Models;
-using Bitmate.Services.Crypto.BlockCypher.Exceptions;
 using Bitmate.Services.Crypto.BlockCypher.Responses;
+using Bitmate.Services.Crypto.Exceptions;
 using Bitmate.Services.Crypto.Models;
 using Bitmate.Utilities.Json;
 
@@ -30,6 +30,8 @@ namespace Bitmate.Services.Crypto.BlockCypher
             "btc/test3"
         };
 
+        public override string FormatBlockchainName(string name) => name.Split('/')[0].ToUpper();
+
         /// <summary>
         /// <see href="https://www.blockcypher.com/dev/bitcoin/#rate-limits-and-tokens"/><br/>
         /// <see href="https://www.blockcypher.com/dev/ethereum/#rate-limits-and-tokens"/>
@@ -51,8 +53,6 @@ namespace Bitmate.Services.Crypto.BlockCypher
             Console.WriteLine($"[!] {HugeUpdateDelaysAlert}");
         }
 
-        public override string FormatBlockchainName(string name) => name.Split('/')[0].ToUpper();
-
         private static readonly JsonSerializerOptions _jsonSerializerOptions = new()
         {
             PropertyNamingPolicy = new SnakeCaseJsonNamingPolicy()
@@ -72,7 +72,7 @@ namespace Bitmate.Services.Crypto.BlockCypher
             return JsonSerializer.Deserialize<T>(responseString, _jsonSerializerOptions);
         }
 
-        public override async Task<Transaction> GetTransactionAsync(string blockchain, string txid)
+        public override async Task<TrackedTransaction> GetTransactionAsync(string blockchain, string txid)
         {
             HttpRequestMessage RequestMessage() => new(HttpMethod.Get, $"{blockchain}/txs/{txid}");
 
@@ -80,7 +80,7 @@ namespace Bitmate.Services.Crypto.BlockCypher
             {
                 var tx = await GetResponseAsync<TxResponse>(RequestMessage);
 
-                return new Transaction()
+                return new TrackedTransaction()
                 {
                     Found = true,
                     Confirmations = tx.Confirmations,
@@ -90,7 +90,7 @@ namespace Bitmate.Services.Crypto.BlockCypher
             }
             catch (EntityNotFoundException)
             {
-                return new Transaction()
+                return new TrackedTransaction()
                 {
                     Found = false
                 };

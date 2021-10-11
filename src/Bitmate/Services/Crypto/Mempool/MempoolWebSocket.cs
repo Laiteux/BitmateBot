@@ -4,8 +4,8 @@ using System.Net.WebSockets;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Bitmate.Models;
-using Bitmate.Services.Crypto.Mempool.Messages;
 using Bitmate.Services.Crypto.Mempool.Models;
+using Bitmate.Services.Crypto.Mempool.Responses;
 using Bitmate.Utilities;
 using Websocket.Client;
 
@@ -90,7 +90,7 @@ namespace Bitmate.Services.Crypto.Mempool
             {
                 string txid = rbfTransaction.GetProperty("txid").GetString();
 
-                Events.TxReplaced?.Invoke();
+                Events.TxReplaced?.Invoke(txid);
             }
         }
 
