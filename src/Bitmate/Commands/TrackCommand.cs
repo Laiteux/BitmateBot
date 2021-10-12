@@ -79,7 +79,7 @@ namespace Bitmate.Commands
                 return;
             }
 
-            const int maxConfirmations = 100;
+            const int maxConfirmations = 10;
 
             if (confirmations is < 1 or > maxConfirmations)
             {
