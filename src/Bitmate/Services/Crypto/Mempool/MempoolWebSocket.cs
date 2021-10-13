@@ -48,6 +48,7 @@ namespace Bitmate.Services.Crypto.Mempool
 
             await _ws.Start();
 
+            _ws.ReconnectionHappened.Subscribe(_ => RetrackAsync().GetAwaiter().GetResult());
             _ws.MessageReceived.Subscribe(MessageReceived);
 
             // Keepalive
@@ -60,6 +61,23 @@ namespace Bitmate.Services.Crypto.Mempool
                     _ = PingAsync();
                 }
             });
+        }
+
+        private async Task RetrackAsync()
+        {
+            if (_trackedTx != null)
+            {
+                await TrackTxAsync(_trackedTx);
+            }
+            else if (_trackingBlocks)
+            {
+                await TrackBlocksAsync();
+            }
+
+            if (_trackedAddress != null)
+            {
+                await TrackAddressAsync(_trackedAddress);
+            }
         }
 
         private void MessageReceived(ResponseMessage message)
@@ -109,6 +127,8 @@ namespace Bitmate.Services.Crypto.Mempool
             }));
         }
 
+        private bool _trackingBlocks;
+
         public async Task TrackBlocksAsync()
         {
             ThrowIfNotStarted();
@@ -118,7 +138,11 @@ namespace Bitmate.Services.Crypto.Mempool
                 action = "want",
                 data = new[] { "blocks" }
             }));
+
+            _trackingBlocks = true;
         }
+
+        private string _trackedTx;
 
         public async Task TrackTxAsync(string txid)
         {
@@ -129,7 +153,11 @@ namespace Bitmate.Services.Crypto.Mempool
             {
                 { "track-tx", txid }
             }));
+
+            _trackedTx = txid;
         }
+
+        private string _trackedAddress;
 
         public async Task TrackAddressAsync(string address)
         {
@@ -139,6 +167,8 @@ namespace Bitmate.Services.Crypto.Mempool
             {
                 { "track-address", address }
             }));
+
+            _trackedAddress = address;
         }
 
         public void Dispose()
