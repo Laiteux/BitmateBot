@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Bitmate.Extensions;
+using Bitmate.Models;
 using Bitmate.Services.Cache;
 using Bitmate.Services.Cache.Models;
 using Bitmate.Services.Crypto.Models;
@@ -35,6 +36,15 @@ namespace Bitmate.Commands
             string blockchain = null;
             string txid = args[0];
             long confirmations = args.Length < 2 ? 1 : long.Parse(args[1]);
+
+            if (txid.StartsWith("0x") && !CryptoApi.GetFormattedBlockchains().Contains("ETH"))
+            {
+                await bot.SendTextMessageAsync(message.Chat,
+                    CryptoApi.BuildSupportedBlockchainsMessage("😔 Sorry, Ethereum tokens aren't supported as of right now."),
+                    ParseMode.Markdown);
+
+                return;
+            }
 
             TrackedTransaction transaction = null;
 

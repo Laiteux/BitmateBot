@@ -152,15 +152,6 @@ namespace Bitmate
                         if (!match.Success)
                             return;
 
-                        if (match.Groups[3].Success && !Data.LazyApi.Value.GetFormattedBlockchains().Contains("ETH"))
-                        {
-                            await bot.SendTextMessageAsync(message.Chat,
-                                Data.LazyApi.Value.BuildSupportedBlockchainsMessage("😔 Sorry, Ethereum tokens aren't supported as of right now."),
-                                ParseMode.Markdown);
-
-                            return;
-                        }
-
                         string txid = match.Groups[2].Value;
                         int confirmations = splittedMessage.Length < 2 ? 1 : int.Parse(splittedMessage[1]);
 
