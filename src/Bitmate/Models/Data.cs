@@ -16,9 +16,9 @@ namespace Bitmate.Models
 
         public CacheService Cache { get; set; }
 
-        public Func<CryptoApi> FuncApi { get; set; }
+        public Func<CryptoApi> FuncApi { get; private set; }
 
-        public Lazy<CryptoApi> LazyApi { get; set; }
+        public Lazy<CryptoApi> LazyApi { get; private set; }
 
         public List<Proxy> Proxies { get; set; }
 

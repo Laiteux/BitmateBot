@@ -77,6 +77,8 @@ namespace Bitmate
 
         private static async Task LoadCache()
         {
+            var trackCommand = (TrackCommand)_commands.Single(c => c is TrackCommand);
+
             foreach (var transaction in Data.Cache.Read())
             {
                 if (transaction.Api.Equals(Data.Settings.Api, StringComparison.OrdinalIgnoreCase))
@@ -85,7 +87,7 @@ namespace Bitmate
                     {
                         try
                         {
-                            await TrackCommand.StartMonitoringTransactionAsync(Data.Bot, Data.FuncApi(), transaction);
+                            await trackCommand.StartMonitoringTransactionAsync(Data.Bot, transaction);
                         }
                         catch (Exception ex)
                         {
@@ -213,9 +215,7 @@ namespace Bitmate
                                 return;
                             }
 
-                            CryptoApi api = command.UseCryptoApi ? Data.FuncApi() : null;
-
-                            await command.HandleAsync(bot, api, message, commandArgs);
+                            await command.HandleAsync(bot, message, commandArgs);
                         }
                         catch (Exception ex)
                         {

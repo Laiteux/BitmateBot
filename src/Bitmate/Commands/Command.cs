@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Bitmate.Services.Crypto;
@@ -14,14 +15,17 @@ namespace Bitmate.Commands
 
         protected virtual Dictionary<string, bool> Args { get; } = null;
 
-        public virtual bool UseCryptoApi { get; } = false;
+        private Lazy<CryptoApi> LazyCryptoApi { get; } = new(Program.Data.FuncApi);
+
+        // Just to avoid the redundant use of .Value
+        protected CryptoApi CryptoApi => LazyCryptoApi.Value;
 
         protected Command(params string[] name)
         {
             Name = name;
         }
 
-        public async Task HandleAsync(ITelegramBotClient bot, CryptoApi api, Message message, string[] args)
+        public async Task HandleAsync(ITelegramBotClient bot, Message message, string[] args)
         {
             if (Args != null && args.Length < Args.Count(arg => arg.Value))
             {
@@ -30,7 +34,7 @@ namespace Bitmate.Commands
                 return;
             }
 
-            await ExecuteAsync(bot, api, message, args);
+            await ExecuteAsync(bot, message, args);
         }
 
         protected async Task SendUsageAsync(ITelegramBotClient bot, ChatId chatId)
@@ -38,6 +42,6 @@ namespace Bitmate.Commands
             await bot.SendTextMessageAsync(chatId, $"Usage: `/{Name.First()} {string.Join(' ', Args.Select(arg => (arg.Value ? "<" : "[") + arg.Key + (arg.Value ? ">" : "]")))}`", ParseMode.Markdown);
         }
 
-        protected abstract Task ExecuteAsync(ITelegramBotClient bot, CryptoApi api, Message message, string[] args);
+        protected abstract Task ExecuteAsync(ITelegramBotClient bot, Message message, string[] args);
     }
 }
