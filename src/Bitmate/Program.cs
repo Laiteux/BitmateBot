@@ -72,7 +72,7 @@ namespace Bitmate
                 throw new Exception("No API found with this name.");
             }
 
-            Data.SetApi(() => (CryptoApi)Activator.CreateInstance(cryptoApi, Data.Settings.Proxies.Use ? Data.Proxies : new HttpClient()));
+            Data.FuncApi = () => (CryptoApi)Activator.CreateInstance(cryptoApi, Data.Settings.Proxies.Use ? Data.Proxies : new HttpClient());
         }
 
         private static async Task LoadCache()
