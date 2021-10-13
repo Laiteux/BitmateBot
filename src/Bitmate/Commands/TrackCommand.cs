@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Bitmate.Extensions;
-using Bitmate.Models;
 using Bitmate.Services.Cache;
 using Bitmate.Services.Cache.Models;
 using Bitmate.Services.Crypto.Models;
@@ -259,14 +258,15 @@ namespace Bitmate.Commands
                 }
             }
 
+            _currentlyMonitoredTransactions--;
+            Cache.Remove(cachedTransaction);
+            CryptoApi.Dispose();
+
             if (lastBlockMinedMessage != null)
             {
                 // ReSharper disable once RedundantArgumentDefaultValue
                 await bot.EditMessageReplyMarkupAsync(lastBlockMinedMessage.Chat, lastBlockMinedMessage.MessageId, null);
             }
-
-            _currentlyMonitoredTransactions--;
-            Cache.Remove(cachedTransaction);
         }
     }
 }

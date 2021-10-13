@@ -15,7 +15,7 @@ using Bitmate.Utilities.Json;
 
 namespace Bitmate.Services.Crypto.Mempool
 {
-    public class MempoolCryptoApi : CryptoApi
+    public class MempoolCryptoApi : CryptoApi, IDisposable
     {
         public override string[] MainBlockchains { get; } = { "main" };
 
@@ -145,6 +145,12 @@ namespace Bitmate.Services.Crypto.Mempool
             var blocks = await GetResponseAsync<List<Block>>(RequestMessage);
 
             return blocks.First().Height;
+        }
+
+        public override void Dispose()
+        {
+            base.Dispose();
+            _ws.Dispose();
         }
     }
 }

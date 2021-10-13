@@ -10,7 +10,7 @@ using Bitmate.Utilities;
 
 namespace Bitmate.Services.Crypto
 {
-    public abstract class CryptoApi
+    public abstract class CryptoApi : IDisposable
     {
         /// <summary>
         /// By descending priority order to try and make auto detection as fast as possible
@@ -91,5 +91,7 @@ namespace Bitmate.Services.Crypto
 
             return message.ToString();
         }
+
+        public virtual void Dispose() { }
     }
 }
