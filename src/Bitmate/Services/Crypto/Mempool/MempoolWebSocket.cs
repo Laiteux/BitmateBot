@@ -48,6 +48,7 @@ namespace Bitmate.Services.Crypto.Mempool
 
             await _ws.Start();
 
+            _ws.DisconnectionHappened.Subscribe(_ => Console.WriteLine("disconnection"));
             _ws.ReconnectionHappened.Subscribe(_ => RetrackAsync().GetAwaiter().GetResult());
             _ws.MessageReceived.Subscribe(MessageReceived);
 
@@ -65,6 +66,8 @@ namespace Bitmate.Services.Crypto.Mempool
 
         private async Task RetrackAsync()
         {
+            Console.WriteLine("reconnection");
+
             if (_trackedTx != null)
             {
                 await TrackTxAsync(_trackedTx);
@@ -92,7 +95,7 @@ namespace Bitmate.Services.Crypto.Mempool
                 {
                     Events.TxConfirmed?.Invoke(block);
                 }
-                else // On purpose, to avoid 2 events for the same block
+                else // On purpose, to avoid 2 different events for the same block
                 {
                     Events.BlockMined?.Invoke(block);
                 }

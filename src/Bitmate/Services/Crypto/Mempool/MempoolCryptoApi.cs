@@ -25,9 +25,11 @@ namespace Bitmate.Services.Crypto.Mempool
 
         private Events Events => _ws.Events;
 
+        private TrackedTransaction _trackedTransaction;
+        private long _height;
+
         private readonly CircularList<Proxy> _proxies;
         private MempoolWebSocket _ws;
-        private TrackedTransaction _trackedTransaction;
 
         public MempoolCryptoApi(List<Proxy> proxies = null) : base(proxies)
         {
@@ -110,7 +112,15 @@ namespace Bitmate.Services.Crypto.Mempool
 
                 if (_trackedTransaction.Confirmations == 0)
                 {
-                    Events.TxConfirmed += _ => _trackedTransaction.Confirmations++;
+                    Events.TxConfirmed += _ =>
+                    {
+                        _trackedTransaction.Confirmations++;
+
+                        if (_height > 0)
+                        {
+                            _height++;
+                        }
+                    };
                 }
 
                 Events.BlockMined += _ =>
@@ -118,6 +128,11 @@ namespace Bitmate.Services.Crypto.Mempool
                     if (_trackedTransaction.Confirmations > 0)
                     {
                         _trackedTransaction.Confirmations++;
+                    }
+
+                    if (_height > 0)
+                    {
+                        _height++;
                     }
                 };
 
@@ -140,11 +155,16 @@ namespace Bitmate.Services.Crypto.Mempool
 
         public override async Task<long> GetBlockchainHeightAsync(string blockchain)
         {
-            HttpRequestMessage RequestMessage() => new(HttpMethod.Get, GetBaseAddress(blockchain) + "blocks");
+            if (_height == 0)
+            {
+                HttpRequestMessage RequestMessage() => new(HttpMethod.Get, GetBaseAddress(blockchain) + "blocks");
 
-            var blocks = await GetResponseAsync<List<Block>>(RequestMessage);
+                var blocks = await GetResponseAsync<List<Block>>(RequestMessage);
 
-            return blocks.First().Height;
+                _height = blocks.First().Height;
+            }
+
+            return _height;
         }
 
         public override void Dispose()
