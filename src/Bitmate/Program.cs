@@ -27,11 +27,9 @@ namespace Bitmate
     {
         public static Data Data { get; } = new();
 
-        private static readonly List<Type> _cryptoApiTypes = TypeHelper.GetSubclasses<CryptoApi>().ToList();
+        private static List<Type> _cryptoApiTypes;
 
-        private static readonly List<Command> _commands = TypeHelper.GetSubclasses<Command>()
-            .Select(t => (Command)Activator.CreateInstance(t))
-            .ToList();
+        private static List<Command> _commands;
 
         public static async Task Main()
         {
@@ -65,6 +63,8 @@ namespace Bitmate
                 .Select(p => new Proxy(p, Data.Settings.Proxies))
                 .ToList();
 
+            _cryptoApiTypes = TypeHelper.GetSubclasses<CryptoApi>().ToList();
+
             var cryptoApi = _cryptoApiTypes.SingleOrDefault(c => c.Name.TrimEnd("CryptoApi").Equals(Data.Settings.Api, StringComparison.OrdinalIgnoreCase));
 
             if (cryptoApi == null)
@@ -73,6 +73,10 @@ namespace Bitmate
             }
 
             Data.FuncApi = () => (CryptoApi)Activator.CreateInstance(cryptoApi, Data.Settings.Proxies.Use ? Data.Proxies : new HttpClient());
+
+            _commands = TypeHelper.GetSubclasses<Command>()
+                .Select(t => (Command)Activator.CreateInstance(t))
+                .ToList();
         }
 
         private static async Task LoadCache()
@@ -205,6 +209,8 @@ namespace Bitmate
 
                                 return;
                             }
+
+                            command = (Command)Activator.CreateInstance(command.GetType());
 
                             await command.HandleAsync(bot, message, commandArgs);
                         }
