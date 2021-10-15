@@ -260,7 +260,6 @@ namespace Bitmate.Commands
 
             _currentlyMonitoredTransactions--;
             Cache.Remove(cachedTransaction);
-            CryptoApi.Dispose();
 
             if (lastBlockMinedMessage != null)
             {

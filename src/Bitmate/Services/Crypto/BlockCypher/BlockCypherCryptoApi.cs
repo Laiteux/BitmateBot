@@ -45,7 +45,6 @@ namespace Bitmate.Services.Crypto.BlockCypher
         public BlockCypherCryptoApi(HttpClient httpClient = null) : base(httpClient)
         {
             Console.WriteLine($"[!] {HugeUpdateDelaysAlert}");
-            Console.WriteLine("[!] It is strongly advised to use proxies with the BlockCypher API");
         }
 
         public BlockCypherCryptoApi(List<Proxy> proxies) : base(proxies)
