@@ -175,6 +175,8 @@ namespace Bitmate
                         if (!Data.Cache.TryGetByHashCode(hashCode, out var transaction) || transaction.Message.From.Id != callbackQuery.From.Id)
                         {
                             await Data.Bot.AnswerCallbackQueryAsync(callbackQuery.Id);
+
+                            return;
                         }
 
                         transaction.BlockAlertsMuted = !transaction.BlockAlertsMuted;

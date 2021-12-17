@@ -61,6 +61,7 @@ namespace Bitmate.Services.Cache.Models
 
             // Can't use this because we need a deterministic value that remains the same between different program runs
             // See https://andrewlock.net/why-is-string-gethashcode-different-each-time-i-run-my-program-in-net-core/
+
             // return HashCode.Combine(Api, Blockchain, TxId, Confirmations, Message.MessageId);
         }
     }
