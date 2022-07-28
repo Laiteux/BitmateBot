@@ -43,7 +43,7 @@ namespace Bitmate.Commands
                 .ToString(), ParseMode.Markdown);
 
             await bot.SendTextMessageAsync(message.Chat, new StringBuilder()
-                .AppendLine("🔗 Send me a transaction hash or URL to get started.")
+                .AppendLine("🔗 Send me a transaction hash or URL to get started!")
                 .AppendLine()
                 .AppendLine("💡 Pro tip: You can also append a custom amount of confirmations.")
                 .ToString());

@@ -60,7 +60,8 @@ namespace Bitmate.Commands
                     bool testnet = CryptoApi.TestBlockchains != null && CryptoApi.TestBlockchains.Contains(blockchain);
 
                     await bot.EditMessageTextAsync(locatingTransactionMessage.Chat, locatingTransactionMessage.MessageId,
-                        $"🌐 Transaction found on the {CryptoApi.FormatBlockchainName(blockchain)}{(testnet ? " test" : null)} blockchain.");
+                        $"🌐 Transaction found on the *{CryptoApi.FormatBlockchainName(blockchain)}{(testnet ? " test" : null)}* blockchain.",
+                        ParseMode.Markdown);
 
                     break;
                 }
@@ -89,7 +90,8 @@ namespace Bitmate.Commands
 
             if (confirmations is < 1 or > maxConfirmations)
             {
-                await bot.SendTextMessageAsync(message.Chat, $"❌ Confirmation count can not exceed {maxConfirmations}.");
+                await bot.SendTextMessageAsync(message.Chat, $"❌ Confirmation count can not exceed *{maxConfirmations}*.",
+                    ParseMode.Markdown);
 
                 return;
             }
@@ -98,12 +100,19 @@ namespace Bitmate.Commands
             {
                 if (transaction.Confirmations >= confirmations)
                 {
-                    await bot.SendTextMessageAsync(message.Chat, $"❎ Your transaction has already reached {transaction.Confirmations} {"confirmation".Pluralize(transaction.Confirmations)}.");
+                    await bot.SendTextMessageAsync(message.Chat, $"❎ Your transaction has already reached *{transaction.Confirmations}* {"confirmation".Pluralize(transaction.Confirmations)}.",
+                        ParseMode.Markdown);
 
                     return;
                 }
 
-                await bot.SendTextMessageAsync(message.Chat, $"🔔 Ok, I will let you know when your transaction hits {confirmations} {"confirmation".Pluralize(confirmations)}.");
+                if (transaction.Confirmations > 0)
+                {
+                    await bot.SendTextMessageAsync(message.Chat, $"ℹ️ Your transaction currently has *{transaction.Confirmations}* {"confirmation".Pluralize(transaction.Confirmations)}.", ParseMode.Markdown);
+                }
+
+                await bot.SendTextMessageAsync(message.Chat, $"🔔 {(transaction.Confirmations > 0 ? null : "Ok, ")}I will let you know when {(transaction.Confirmations > 0 ? "it" : "your transaction")} hits *{confirmations}* {"confirmation".Pluralize(confirmations)}.",
+                    ParseMode.Markdown);
             }
             else
             {
@@ -144,7 +153,8 @@ namespace Bitmate.Commands
                     if (transaction.Confirmations >= confirmations)
                     {
                         await bot.SendTextMessageAsync(message.Chat,
-                            $"✅ Your transaction just hit {transaction.Confirmations} {"confirmation".Pluralize(transaction.Confirmations)}!",
+                            $"✅ Your transaction just hit *{transaction.Confirmations}* {"confirmation".Pluralize(transaction.Confirmations)}!",
+                            ParseMode.Markdown,
                             replyToMessageId: message.MessageId);
 
                         break;
@@ -153,7 +163,7 @@ namespace Bitmate.Commands
                     if (transaction.DoubleSpent)
                     {
                         var text = new StringBuilder()
-                            .AppendLine("⚠️ Your transaction has been double-spent!")
+                            .AppendLine("*⚠️ Your transaction has been double-spent!*")
                             .AppendLine()
                             .AppendLine("This could be either because the sender reversed it, or accelerated it by increasing the fee.");
 
@@ -223,7 +233,7 @@ namespace Bitmate.Commands
                                     await bot.SendTextMessageAsync(message.Chat, new StringBuilder()
                                             .AppendLine($"⛏ New block `#{height}` was mined and your transaction just made it through.")
                                             .AppendLine()
-                                            .AppendLine($"⏳ {confirmations - 1} more until it hits {confirmations} confirmations...")
+                                            .AppendLine($"⏳ {confirmations - 1} more until it reaches {confirmations} confirmations...")
                                             .ToString(),
                                         ParseMode.Markdown,
                                         replyToMessageId: message.MessageId);

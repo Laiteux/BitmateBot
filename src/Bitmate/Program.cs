@@ -65,7 +65,7 @@ namespace Bitmate
 
             _cryptoApiTypes = TypeHelper.GetSubclasses<CryptoApi>().ToList();
 
-            var cryptoApi = _cryptoApiTypes.SingleOrDefault(c => c.Name.TrimEnd("CryptoApi").Equals(Data.Settings.Api, StringComparison.OrdinalIgnoreCase));
+            var cryptoApi = _cryptoApiTypes.SingleOrDefault(c => c.Name.TrimEnd(nameof(CryptoApi)).Equals(Data.Settings.Api, StringComparison.OrdinalIgnoreCase));
 
             if (cryptoApi == null)
             {
@@ -102,7 +102,7 @@ namespace Bitmate
                 else
                 {
                     await Data.Bot.SendTextMessageAsync(transaction.Message.Chat,
-                        "⚠️ Bot just restarted and API was changed, please resend your transaction.",
+                        "⚠️ Bot just restarted and API was changed, please send me your transaction again.",
                         replyToMessageId: transaction.Message.MessageId);
 
                     if (transaction.LastBlockMinedMessage != null)
