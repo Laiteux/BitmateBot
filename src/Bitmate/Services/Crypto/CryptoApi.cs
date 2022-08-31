@@ -6,7 +6,6 @@ using System.Text;
 using System.Threading.Tasks;
 using Bitmate.Models;
 using Bitmate.Services.Crypto.Models;
-using Bitmate.Utilities;
 
 namespace Bitmate.Services.Crypto
 {
@@ -29,9 +28,9 @@ namespace Bitmate.Services.Crypto
 
         protected virtual Uri BaseAddress { get; }
 
-        private readonly CircularList<HttpClient> _httpClients;
+        private readonly List<HttpClient> _httpClients;
 
-        protected HttpClient HttpClient => _httpClients.Next();
+        protected HttpClient HttpClient => _httpClients[Random.Shared.Next(_httpClients.Count)];
 
         protected CryptoApi(HttpClient httpClient = null)
         {
@@ -40,7 +39,7 @@ namespace Bitmate.Services.Crypto
             // ReSharper disable once VirtualMemberCallInConstructor
             httpClient.BaseAddress = BaseAddress;
 
-            _httpClients = new CircularList<HttpClient>(new[] { httpClient });
+            _httpClients = new List<HttpClient>(new[] { httpClient });
         }
 
 
@@ -54,7 +53,7 @@ namespace Bitmate.Services.Crypto
             var httpClients = proxies.Select(p => p.GetHttpClient()).ToList();
             httpClients.ForEach(h => h.BaseAddress = BaseAddress);
 
-            _httpClients = new CircularList<HttpClient>(httpClients);
+            _httpClients = new List<HttpClient>(httpClients);
 
             MaxRequestsPerHour = 0;
         }
