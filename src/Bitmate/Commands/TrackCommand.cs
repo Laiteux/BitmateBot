@@ -81,7 +81,8 @@ namespace Bitmate.Commands
             if (Cache.TryGet(cachedTransaction, out var found))
             {
                 await bot.SendTextMessageAsync(message.Chat, "⬆️ You are already monitoring this transaction.",
-                    replyToMessageId: found.Message.MessageId);
+                    replyToMessageId: found.Message.MessageId,
+                    allowSendingWithoutReply: true);
 
                 return;
             }
@@ -155,7 +156,8 @@ namespace Bitmate.Commands
                         await bot.SendTextMessageAsync(message.Chat,
                             $"✅ Your transaction just hit *{transaction.Confirmations}* {"confirmation".Pluralize(transaction.Confirmations)}!",
                             ParseMode.Markdown,
-                            replyToMessageId: message.MessageId);
+                            replyToMessageId: message.MessageId,
+                            allowSendingWithoutReply: true);
 
                         break;
                     }
@@ -174,12 +176,13 @@ namespace Bitmate.Commands
                         }
 
                         text.AppendLine()
-                            .AppendLine("*Be extremely careful when accepting this transaction!*");
+                            .AppendLine("*Be extremely careful when accepting this payment!*");
 
                         await bot.SendTextMessageAsync(message.Chat, text.ToString(),
                             ParseMode.Markdown,
                             disableWebPagePreview: true,
-                            replyToMessageId: message.MessageId);
+                            replyToMessageId: message.MessageId,
+                            allowSendingWithoutReply: true);
 
                         break;
                     }
@@ -213,6 +216,7 @@ namespace Bitmate.Commands
                                                 $"⛏ New block `#{height}` was mined but your transaction didn't make it through, most likely because of the fees being too low.",
                                                 ParseMode.Markdown,
                                                 replyToMessageId: message.MessageId,
+                                                allowSendingWithoutReply: true,
                                                 replyMarkup: new InlineKeyboardMarkup(InlineKeyboardButton.WithCallbackData(
                                                     "🔕 Mute block alerts", $"toggleBlockAlerts:{cachedTransaction.GetHashCode()}")));
                                         }
@@ -236,7 +240,8 @@ namespace Bitmate.Commands
                                             .AppendLine($"⏳ {confirmations - 1} more until it reaches {confirmations} confirmations...")
                                             .ToString(),
                                         ParseMode.Markdown,
-                                        replyToMessageId: message.MessageId);
+                                        replyToMessageId: message.MessageId,
+                                        allowSendingWithoutReply: true);
 
                                     oneConfirmation = true;
                                 }

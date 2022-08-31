@@ -102,8 +102,9 @@ namespace Bitmate
                 else
                 {
                     await Data.Bot.SendTextMessageAsync(transaction.Message.Chat,
-                        "⚠️ Bot just restarted and API was changed, please send me your transaction again.",
-                        replyToMessageId: transaction.Message.MessageId);
+                        "⚠️ Bot was just restarted and API was changed, please send me your transaction again.",
+                        replyToMessageId: transaction.Message.MessageId,
+                        allowSendingWithoutReply: true);
 
                     if (transaction.LastBlockMinedMessage != null)
                     {
