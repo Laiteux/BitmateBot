@@ -152,12 +152,12 @@ namespace Bitmate
                         string[] splittedMessage = message.Text.Split(' ');
                         string transaction = splittedMessage[0];
 
-                        var match = Regex.Match(transaction, @"^(.*[\/#=])?((0x)?[a-fA-F0-9]{64})(\/.*)?$");
+                        var match = Regex.Match(transaction, @"^(?:.*[\/#=])?((0x)?[a-fA-F0-9]{64})(?:\/.*)?$");
 
                         if (!match.Success)
                             return;
 
-                        string txid = match.Groups[2].Value;
+                        string txid = match.Groups[1].Value;
                         int confirmations = splittedMessage.Length < 2 ? 1 : int.Parse(splittedMessage[1]);
 
                         command = _commands.Single(c => c is TrackCommand);
